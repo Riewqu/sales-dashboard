@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TikTok Sales Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            margin: 20px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+        }
+        .clock {
+            text-align: center;
+            color: #34495e;
+            font-size: 1.2em;
+            margin-bottom: 20px;
+            font-weight: bold;
+            background: #fff;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: block;
+            width: fit-content;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .total-sales {
+            text-align: center;
+            margin: 20px 0;
+            font-size: 2.8em;
+            color: #e74c3c;
+            font-weight: bold;
+            background: #fff;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .container {
+            max-width: 1300px;
+            margin: 0 auto;
+            display: flex;
+            gap: 20px;
+        }
+        .main-content {
+            flex: 3;
+        }
+        .sidebar {
+            flex: 1;
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .filters {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        select, input, button {
+            padding: 12px 16px;
+            font-size: 1em;
+            border: none;
+            border-radius: 8px;
+            background: #fff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            width: 200px;
+            box-sizing: border-box;
+        }
+        select:hover, input:hover, button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        .choices {
+            width: 200px;
+        }
+        .choices__inner {
+            padding: 0;
+            border-radius: 8px;
+            background: #fff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .choices__list--single {
+            padding: 12px 16px;
+        }
+        .choices__list--dropdown {
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        button {
+            background: linear-gradient(45deg, #e74c3c, #c0392b);
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        canvas {
+            background: #fff;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            width: 100%;
+        }
+        .flatpickr-input {
+            width: 200px;
+        }
+        .top-categories {
+            margin-top: 20px;
+        }
+        .top-categories h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+        .top-categories table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .top-categories th, .top-categories td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        .top-categories th {
+            background: #e74c3c;
+            color: white;
+        }
+        .top-categories td {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 200px;
+        }
+        .top-categories tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+        .top-categories tr:hover {
+            background: #f1f1f1;
+        }
+        .error-message {
+            color: #e74c3c;
+            text-align: center;
+            font-size: 1.2em;
+            margin: 20px 0;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            width: 80%;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        .modal-content h2 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+        .modal-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        .modal-content th, .modal-content td {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            text-align: left;
+        }
+        .modal-content th {
+            background: #e74c3c;
+            color: white;
+        }
+        .modal-content td {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 200px;
+        }
+        .modal-content tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+        .modal-content tr:hover {
+            background: #f1f1f1;
+        }
+        .close-button {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            float: right;
+            margin-bottom: 10px;
+        }
+        .close-button:hover {
+            background: #c0392b;
+        }
+    </style>
+</head>
+<body>
+    <h1>TikTok Sales Dashboard</h1>
+    <div class="clock" id="clock"></div>
+    <div class="total-sales" id="totalSales">ยอดขายรวม: 0 บาท</div>
+    <div class="error-message" id="errorMessage" style="display: none;"></div>
+    <div class="container">
+        <div class="main-content">
+            <div class="filters">
+                <select id="platformFilter">
+                    <option value="all">ทุกแพลตฟอร์ม</option>
+                    <option value="TikTok">TikTok</option>
+                </select>
+                <input type="text" id="dateRange" placeholder="เลือกวันที่หรือช่วงวันที่">
+                <select id="categoryFilter" multiple></select>
+                <select id="groupByFilter">
+                    <option value="day">ตามวันที่</option>
+                    <option value="month">ตามเดือน</option>
+                </select>
+                <button onclick="updateDashboard()">อัปเดต</button>
+                <button onclick="openSalesModal()">ดูยอดขายสินค้าทั้งหมด</button>
+            </div>
+            <canvas id="salesChart"></canvas>
+            <canvas id="categoryPieChart"></canvas>
+        </div>
+        <div class="sidebar">
+            <div class="top-categories">
+                <h3>5 อันดับสินค้าขายดี</h3>
+                <table id="topCategoriesTable">
+                    <thead>
+                        <tr>
+                            <th>ชื่อสินค้า</th>
+                            <th>จำนวน</th>
+                            <th>ยอดขาย (บาท)</th>
+                            <th>สัดส่วน (%)</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="salesModal">
+        <div class="modal-content">
+            <button class="close-button" onclick="closeSalesModal()">ปิด</button>
+            <h2>ยอดขายสินค้าทั้งหมด</h2>
+            <table id="allSalesTable">
+                <thead>
+                    <tr>
+                        <th>ชื่อสินค้า</th>
+                        <th>จำนวน</th>
+                        <th>ยอดขาย (บาท)</th>
+                        <th>สัดส่วน (%)</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        let rawData = [];
+        let salesChart, categoryPieChart;
+        const categoryChoices = new Choices('#categoryFilter', {
+            removeItemButton: true,
+            placeholderValue: 'เลือกหมวดหมู่',
+            noChoicesText: 'ไม่มีหมวดหมู่ให้เลือก',
+            itemSelectText: '',
+            maxItemCount: -1,
+            renderSelectedChoices: 'always'
+        });
+
+        const colorPalette = [
+            '#e74c3c', '#3498db', '#f1c40f', '#2ecc71', '#9b59b6',
+            '#e91e63', '#1abc9c', '#ff7f50', '#6b7280', '#ffcc00',
+            '#00ced1', '#ff69b4', '#4682b4', '#32cd32', '#dda0dd',
+            '#8b008b', '#20b2aa', '#f4a261', '#778899', '#dc143c'
+        ];
+
+        const thaiMonths = [
+            'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.',
+            'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'
+        ];
+
+        function updateClock() {
+            const now = new Date();
+            const options = {
+                timeZone: 'Asia/Bangkok',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            };
+            const formatter = new Intl.DateTimeFormat('th-TH', options);
+            const parts = formatter.formatToParts(now);
+            const date = `${parts[4].value}-${parts[2].value}-${parts[0].value}`;
+            const time = `${parts[6].value}:${parts[8].value}:${parts[10].value}`;
+            document.getElementById('clock').textContent = `${date} ${time} (GMT+07)`;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        function openSalesModal() {
+            const modal = document.getElementById('salesModal');
+            modal.style.display = 'flex';
+            updateSalesModal();
+        }
+
+        function closeSalesModal() {
+            const modal = document.getElementById('salesModal');
+            modal.style.display = 'none';
+        }
+
+        function updateSalesModal() {
+            const platform = document.getElementById('platformFilter').value;
+            const dateRange = document.getElementById('dateRange').value.split(" to ");
+            const startDate = dateRange[0] ? new Date(dateRange[0]) : null;
+            const endDate = dateRange[1] ? new Date(dateRange[1]) : (startDate ? new Date(startDate) : null);
+            const selectedCategories = categoryChoices.getValue(true);
+
+            let filteredData = rawData;
+            if (platform !== 'all') {
+                filteredData = filteredData.filter(d => d.Platform === platform);
+            }
+            if (startDate) {
+                filteredData = filteredData.filter(d => {
+                    const itemDate = new Date(d.Date);
+                    return (!startDate || itemDate >= startDate) && (!endDate || itemDate <= endDate);
+                });
+            }
+            if (!selectedCategories.includes('all') && selectedCategories.length > 0) {
+                filteredData = filteredData.filter(d => selectedCategories.includes(d.Category.replace(/\n/g, ' ')));
+            }
+
+            const categorySales = {};
+            const categoryCount = {};
+            filteredData.forEach(d => {
+                if (d.Sales) {
+                    const cleanCategory = d.Category.replace(/\n/g, ' ');
+                    categorySales[cleanCategory] = (categorySales[cleanCategory] || 0) + Number(d.Sales);
+                    categoryCount[cleanCategory] = (categoryCount[cleanCategory] || 0) + 1;
+                }
+            });
+
+            const totalSales = Object.values(categorySales).reduce((sum, sales) => sum + sales, 0);
+            const allCategories = Object.entries(categorySales)
+                .sort((a, b) => b[1] - a[1])
+                .map(([category, sales]) => ({
+                    category,
+                    sales,
+                    count: categoryCount[category] || 0,
+                    percentage: totalSales > 0 ? (sales / totalSales * 100).toFixed(1) : 0
+                }));
+
+            const tableBody = document.querySelector('#allSalesTable tbody');
+            tableBody.innerHTML = '';
+            allCategories.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.category}</td>
+                    <td>${item.count.toLocaleString()}</td>
+                    <td>${item.sales.toLocaleString()}</td>
+                    <td>${item.percentage}%</td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        async function loadData() {
+            try {
+                const response = await fetch('sales_data.json');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                const data = await response.json();
+                console.log('Loaded data:', data);
+                if (!data || data.length === 0) {
+                    throw new Error('No data found in sales_data.json');
+                }
+                rawData = data;
+                const categories = [...new Set(data.map(d => d.Category.replace(/\n/g, ' ')))];
+                categoryChoices.setChoices(
+                    [{ value: 'all', label: 'ทุกหมวดหมู่' }].concat(categories.map(cat => ({ value: cat, label: cat }))),
+                    'value',
+                    'label',
+                    true
+                );
+                updateDashboard();
+            } catch (error) {
+                console.error('Error loading data:', error);
+                const errorMessage = document.getElementById('errorMessage');
+                errorMessage.textContent = `ไม่สามารถโหลดข้อมูลได้: ${error.message}`;
+                errorMessage.style.display = 'block';
+            }
+        }
+
+        flatpickr("#dateRange", {
+            mode: "range",
+            dateFormat: "Y-m-d",
+            locale: {
+                firstDayOfWeek: 1,
+                weekdays: {
+                    shorthand: ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"],
+                    longhand: ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"]
+                },
+                months: {
+                    shorthand: ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."],
+                    longhand: ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"]
+                }
+            }
+        });
+
+        function updateDashboard() {
+            const platform = document.getElementById('platformFilter').value;
+            const dateRange = document.getElementById('dateRange').value.split(" to ");
+            const startDate = dateRange[0] ? new Date(dateRange[0]) : null;
+            const endDate = dateRange[1] ? new Date(dateRange[1]) : (startDate ? new Date(startDate) : null);
+            const groupBy = document.getElementById('groupByFilter').value;
+
+            console.log('Date range:', { startDate, endDate });
+            console.log('Group by:', groupBy);
+
+            let filteredData = rawData;
+            if (platform !== 'all') {
+                filteredData = filteredData.filter(d => d.Platform === platform);
+            }
+            if (startDate) {
+                filteredData = filteredData.filter(d => {
+                    const itemDate = new Date(d.Date);
+                    return (!startDate || itemDate >= startDate) && (!endDate || itemDate <= endDate);
+                });
+            }
+            const selectedCategories = categoryChoices.getValue(true);
+            if (!selectedCategories.includes('all') && selectedCategories.length > 0) {
+                filteredData = filteredData.filter(d => selectedCategories.includes(d.Category.replace(/\n/g, ' ')));
+            }
+
+            console.log('Filtered data:', filteredData);
+
+            const totalSales = filteredData.reduce((sum, d) => sum + (Number(d.Sales) || 0), 0);
+            document.getElementById('totalSales').textContent = `ยอดขายรวม: ${totalSales.toLocaleString()} บาท`;
+
+            let labels, salesData, percentageChanges = [];
+            if (groupBy === 'month') {
+                const salesByMonth = {};
+                filteredData.forEach(d => {
+                    const date = new Date(d.Date);
+                    const year = date.getFullYear();
+                    const month = date.getMonth();
+                    const thaiYear = year + 543 - 2500;
+                    const monthKey = `${year}-${month}`;
+                    const monthLabel = `${thaiMonths[month]} ${thaiYear}`;
+                    if (!salesByMonth[monthKey]) {
+                        salesByMonth[monthKey] = { label: monthLabel, sales: 0, year, month };
+                    }
+                    salesByMonth[monthKey].sales += Number(d.Sales) || 0;
+                });
+
+                labels = Object.keys(salesByMonth)
+                    .sort((a, b) => {
+                        const [yearA, monthA] = a.split('-').map(Number);
+                        const [yearB, monthB] = b.split('-').map(Number);
+                        return yearA - yearB || monthA - monthB;
+                    })
+                    .map(key => salesByMonth[key].label);
+                salesData = Object.keys(salesByMonth)
+                    .sort((a, b) => {
+                        const [yearA, monthA] = a.split('-').map(Number);
+                        const [yearB, monthB] = b.split('-').map(Number);
+                        return yearA - yearB || monthA - monthB;
+                    })
+                    .map(key => salesByMonth[key].sales);
+
+                percentageChanges = salesData.map((sales, index) => {
+                    if (index === 0) return '-';
+                    const prevSales = salesData[index - 1];
+                    if (prevSales === 0) return sales > 0 ? '∞' : '0%';
+                    const change = ((sales - prevSales) / prevSales) * 100;
+                    return change >= 0 ? `+${change.toFixed(1)}%` : `${change.toFixed(1)}%`;
+                });
+            } else {
+                labels = [...new Set(filteredData.map(d => d.Date))].sort();
+                salesData = labels.map(date => {
+                    return filteredData.filter(d => d.Date === date).reduce((sum, d) => sum + (Number(d.Sales) || 0), 0);
+                });
+                percentageChanges = salesData.map(() => '');
+            }
+
+            console.log('Labels:', labels);
+            console.log('Sales data:', salesData);
+            console.log('Percentage changes:', percentageChanges);
+
+            if (salesChart) salesChart.destroy();
+            const salesCtx = document.getElementById('salesChart').getContext('2d');
+            salesChart = new Chart(salesCtx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'ยอดขาย (บาท)',
+                        data: salesData,
+                        borderColor: '#e74c3c',
+                        fill: false,
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'ยอดขาย (บาท)' }
+                        },
+                        x: {
+                            title: { display: true, text: groupBy === 'month' ? 'เดือน' : 'วันที่' }
+                        }
+                    },
+                    plugins: {
+                        datalabels: {
+                            display: groupBy === 'month',
+                            align: 'top',
+                            offset: 10,
+                            formatter: (value, ctx) => percentageChanges[ctx.dataIndex] || '',
+                            color: '#2c3e50',
+                            font: {
+                                weight: 'bold',
+                                size: 12
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const index = context.dataIndex;
+                                    const sales = context.parsed.y;
+                                    const percentage = percentageChanges[index] || '';
+                                    return `ยอดขาย: ${sales.toLocaleString()} บาท ${percentage}`;
+                                }
+                            }
+                        }
+                    }
+                },
+                plugins: [ChartDataLabels]
+            });
+
+            const salesByMonth = {};
+            filteredData.forEach(d => {
+                const date = new Date(d.Date);
+                const year = date.getFullYear();
+                const month = date.getMonth();
+                const thaiYear = year + 543 - 2500;
+                const monthKey = `${year}-${month}`;
+                const monthLabel = `${thaiMonths[month]} ${thaiYear}`;
+                if (!salesByMonth[monthKey]) {
+                    salesByMonth[monthKey] = { label: monthLabel, sales: 0, year, month };
+                }
+                salesByMonth[monthKey].sales += Number(d.Sales) || 0;
+            });
+
+            const pieLabels = Object.keys(salesByMonth)
+                .sort((a, b) => {
+                    const [yearA, monthA] = a.split('-').map(Number);
+                    const [yearB, monthB] = b.split('-').map(Number);
+                    return yearA - yearB || monthA - monthB;
+                })
+                .map(key => salesByMonth[key].label);
+            const pieSalesData = Object.keys(salesByMonth)
+                .sort((a, b) => {
+                    const [yearA, monthA] = a.split('-').map(Number);
+                    const [yearB, monthB] = b.split('-').map(Number);
+                    return yearA - yearB || monthA - monthB;
+                })
+                .map(key => salesByMonth[key].sales);
+
+            const totalSalesForPie = pieSalesData.reduce((sum, val) => sum + val, 0);
+            const percentages = pieSalesData.map(sales => totalSalesForPie > 0 ? (sales / totalSalesForPie * 100).toFixed(1) : 0);
+
+            if (categoryPieChart) categoryPieChart.destroy();
+            const categoryPieCtx = document.getElementById('categoryPieChart').getContext('2d');
+            categoryPieChart = new Chart(categoryPieCtx, {
+                type: 'pie',
+                data: {
+                    labels: pieLabels,
+                    datasets: [{
+                        label: 'ยอดขายตามเดือน (%)',
+                        data: pieSalesData,
+                        backgroundColor: colorPalette.slice(0, pieLabels.length),
+                        borderColor: '#fff',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                font: {
+                                    size: 14
+                                },
+                                boxWidth: 20,
+                                padding: 15
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'สัดส่วนยอดขายตามเดือน (%)',
+                            font: {
+                                size: 16
+                            }
+                        },
+                        datalabels: {
+                            formatter: (value, ctx) => {
+                                return percentages[ctx.dataIndex] + '%';
+                            },
+                            color: '#fff',
+                            font: {
+                                weight: 'bold',
+                                size: 12
+                            },
+                            textAlign: 'center'
+                        }
+                    }
+                },
+                plugins: [ChartDataLabels]
+            });
+
+            const categorySales = {};
+            const categoryCount = {};
+            filteredData.forEach(d => {
+                if (d.Sales) {
+                    const cleanCategory = d.Category.replace(/\n/g, ' ');
+                    categorySales[cleanCategory] = (categorySales[cleanCategory] || 0) + Number(d.Sales);
+                    categoryCount[cleanCategory] = (categoryCount[cleanCategory] || 0) + 1;
+                }
+            });
+            const totalTopSales = Object.values(categorySales)
+                .sort((a, b) => b - a)
+                .slice(0, 5)
+                .reduce((sum, sales) => sum + sales, 0);
+            const topCategories = Object.entries(categorySales)
+                .map(([category, sales]) => ({
+                    category,
+                    sales,
+                    count: categoryCount[category] || 0,
+                    percentage: totalTopSales > 0 ? (sales / totalTopSales * 100).toFixed(1) : 0
+                }))
+                .sort((a, b) => b.sales - a.sales)
+                .slice(0, 5);
+
+            const tableBody = document.querySelector('#topCategoriesTable tbody');
+            tableBody.innerHTML = '';
+            topCategories.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.category}</td>
+                    <td>${item.count.toLocaleString()}</td>
+                    <td>${item.sales.toLocaleString()}</td>
+                    <td>${item.percentage}%</td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', loadData);
+
+        document.getElementById('platformFilter').addEventListener('change', updateDashboard);
+        document.getElementById('groupByFilter').addEventListener('change', updateDashboard);
+        categoryChoices.passedElement.element.addEventListener('change', updateDashboard);
+    </script>
+</body>
+</html>
