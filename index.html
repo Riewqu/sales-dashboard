@@ -6,15 +6,16 @@
     <title>TikTok Sales Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css">
     <style>
         body {
             font-family: 'Segoe UI', Arial, sans-serif;
             margin: 20px;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            background: #ffffff;
+            color: #2c3e50;
         }
         h1 {
             text-align: center;
@@ -25,11 +26,11 @@
         }
         .clock {
             text-align: center;
-            color: #34495e;
+            color: #2c3e50;
             font-size: 1.2em;
             margin-bottom: 20px;
             font-weight: bold;
-            background: #fff;
+            background: #f1f5f9;
             padding: 10px;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
@@ -42,15 +43,15 @@
             text-align: center;
             margin: 20px 0;
             font-size: 2.8em;
-            color: #e74c3c;
+            color: #38bdf8;
             font-weight: bold;
-            background: #fff;
+            background: #f1f5f9;
             padding: 15px;
             border-radius: 10px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
         .container {
-            max-width: 1300px;
+            max-width: 1600px;
             margin: 0 auto;
             display: flex;
             gap: 20px;
@@ -60,7 +61,7 @@
         }
         .sidebar {
             flex: 1;
-            background: #fff;
+            background: #ffffff;
             padding: 20px;
             border-radius: 10px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
@@ -71,13 +72,21 @@
             gap: 15px;
             margin-bottom: 30px;
             flex-wrap: wrap;
+            position: relative;
+            min-height: 50px;
+            overflow: visible;
+        }
+        .date-picker-wrapper {
+            position: relative;
+            width: 200px;
         }
         select, input, button {
-            padding: 12px 16px;
-            font-size: 1em;
+            padding: 6px 12px;
+            font-size: 0.85em;
+            line-height: 1.2;
             border: none;
             border-radius: 8px;
-            background: #fff;
+            background: #ffffff;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             transition: all 0.3s ease;
             width: 200px;
@@ -93,29 +102,51 @@
         .choices__inner {
             padding: 0;
             border-radius: 8px;
-            background: #fff;
+            background: #ffffff;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            font-size: 0.85em;
+            line-height: 1.2;
         }
         .choices__list--single {
-            padding: 12px 16px;
+            padding: 6px 12px;
         }
         .choices__list--dropdown {
             border-radius: 8px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.2);
         }
         button {
-            background: linear-gradient(45deg, #e74c3c, #c0392b);
+            background: linear-gradient(45deg, #38bdf8, #1e40af);
             color: white;
             cursor: pointer;
             font-weight: bold;
         }
         canvas {
-            background: #fff;
+            background: #ffffff;
             padding: 15px;
             border-radius: 10px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             margin-bottom: 20px;
             width: 100%;
+            position: relative;
+            z-index: 1;
+        }
+        .charts-container {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            margin-bottom: 20px;
+            z-index: 0;
+        }
+        #categoryPieChart, #topProductsBarChart {
+            max-width: 50%;
+            max-height: 400px;
+            width: 100%;
+            height: auto;
+            margin: 0;
+            padding: 15px;
+            background: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
         .flatpickr-input {
             width: 200px;
@@ -138,7 +169,7 @@
             border-bottom: 1px solid #eee;
         }
         .top-categories th {
-            background: #e74c3c;
+            background: #38bdf8;
             color: white;
         }
         .top-categories td {
@@ -146,6 +177,7 @@
             overflow: hidden;
             text-overflow: ellipsis;
             max-width: 200px;
+            color: #2c3e50;
         }
         .top-categories tr:nth-child(even) {
             background: #f9f9f9;
@@ -172,7 +204,7 @@
             align-items: center;
         }
         .modal-content {
-            background: #fff;
+            background: #ffffff;
             padding: 20px;
             border-radius: 10px;
             width: 80%;
@@ -194,9 +226,10 @@
             padding: 10px;
             border-bottom: 1px solid #eee;
             text-align: left;
+            color: #2c3e50;
         }
         .modal-content th {
-            background: #e74c3c;
+            background: #38bdf8;
             color: white;
         }
         .modal-content td {
@@ -212,7 +245,7 @@
             background: #f1f1f1;
         }
         .close-button {
-            background: #e74c3c;
+            background: #38bdf8;
             color: white;
             border: none;
             padding: 10px 20px;
@@ -222,7 +255,79 @@
             margin-bottom: 10px;
         }
         .close-button:hover {
-            background: #c0392b;
+            background: #1e40af;
+        }
+        .calendar-modes {
+            display: flex;
+            gap: 5px;
+            padding: 5px;
+            background: #f1f5f9;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .calendar-mode-btn {
+            flex: 1;
+            padding: 8px;
+            border: none;
+            background: #ffffff;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+            color: #2c3e50;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+        .calendar-mode-btn:hover {
+            background: #38bdf8;
+            color: white;
+        }
+        .calendar-mode-btn.active {
+            background: #38bdf8;
+            color: white;
+            font-weight: bold;
+        }
+        .calendar-custom-select {
+            display: none;
+            width: 90%;
+            max-width: 200px;
+            padding: 10px;
+            font-size: 1em;
+            border: 1px solid #e5e7eb;
+            background: #ffffff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-radius: 5px;
+            margin: 10px auto;
+            cursor: pointer;
+            position: relative;
+            z-index: 1000;
+            visibility: visible;
+        }
+        .calendar-custom-select:focus {
+            outline: none;
+            border-color: #38bdf8;
+        }
+        .flatpickr-calendar {
+            position: absolute;
+            z-index: 9999;
+            top: calc(100% + 5px);
+            left: 0;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            background: #ffffff;
+            width: 250px;
+        }
+        .custom-select-container {
+            text-align: center;
+            padding: 10px;
+            min-height: 60px;
+            z-index: 1001;
+        }
+        .calendar-hidden {
+            display: none !important;
+        }
+        .no-data-message {
+            text-align: center;
+            color: #e74c3c;
+            font-size: 1.2em;
+            margin: 20px 0;
         }
     </style>
 </head>
@@ -238,17 +343,18 @@
                     <option value="all">ทุกแพลตฟอร์ม</option>
                     <option value="TikTok">TikTok</option>
                 </select>
-                <input type="text" id="dateRange" placeholder="เลือกวันที่หรือช่วงวันที่">
+                <div class="date-picker-wrapper">
+                    <input type="text" id="dateRange" placeholder="เลือกวันที่หรือช่วงวันที่">
+                </div>
                 <select id="categoryFilter" multiple></select>
-                <select id="groupByFilter">
-                    <option value="day">ตามวันที่</option>
-                    <option value="month">ตามเดือน</option>
-                </select>
                 <button onclick="updateDashboard()">อัปเดต</button>
                 <button onclick="openSalesModal()">ดูยอดขายสินค้าทั้งหมด</button>
             </div>
             <canvas id="salesChart"></canvas>
-            <canvas id="categoryPieChart"></canvas>
+            <div class="charts-container">
+                <canvas id="categoryPieChart"></canvas>
+                <canvas id="topProductsBarChart"></canvas>
+            </div>
         </div>
         <div class="sidebar">
             <div class="top-categories">
@@ -256,7 +362,7 @@
                 <table id="topCategoriesTable">
                     <thead>
                         <tr>
-                            <th>ชื่อสินค้า</th>
+                            <th>หมวดหมู่</th>
                             <th>จำนวน</th>
                             <th>ยอดขาย (บาท)</th>
                             <th>สัดส่วน (%)</th>
@@ -272,10 +378,11 @@
         <div class="modal-content">
             <button class="close-button" onclick="closeSalesModal()">ปิด</button>
             <h2>ยอดขายสินค้าทั้งหมด</h2>
+            <div class="no-data-message" id="noDataMessage" style="display: none;">ไม่มีข้อมูลยอดขายในช่วงนี้</div>
             <table id="allSalesTable">
                 <thead>
                     <tr>
-                        <th>ชื่อสินค้า</th>
+                        <th>หมวดหมู่</th>
                         <th>จำนวน</th>
                         <th>ยอดขาย (บาท)</th>
                         <th>สัดส่วน (%)</th>
@@ -288,7 +395,8 @@
 
     <script>
         let rawData = [];
-        let salesChart, categoryPieChart;
+        let salesChart, categoryPieChart, topProductsBarChart;
+        let calendarMode = 'custom';
         const categoryChoices = new Choices('#categoryFilter', {
             removeItemButton: true,
             placeholderValue: 'เลือกหมวดหมู่',
@@ -299,16 +407,30 @@
         });
 
         const colorPalette = [
-            '#e74c3c', '#3498db', '#f1c40f', '#2ecc71', '#9b59b6',
-            '#e91e63', '#1abc9c', '#ff7f50', '#6b7280', '#ffcc00',
-            '#00ced1', '#ff69b4', '#4682b4', '#32cd32', '#dda0dd',
-            '#8b008b', '#20b2aa', '#f4a261', '#778899', '#dc143c'
+            '#38bdf8', '#60a5fa', '#93c5fd', '#bfdbfe', '#dbeafe',
+            '#0284c7', '#2563eb', '#1d4ed8', '#1e40af', '#1e3a8a'
         ];
 
         const thaiMonths = [
             'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.',
             'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'
         ];
+
+        const thaiLongMonths = [
+            'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+            'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
+        ];
+
+        function formatDate(date) {
+            const day = date.getDate();
+            const month = thaiMonths[date.getMonth()];
+            const year = date.getFullYear();
+            return `${day} ${month} ${year}`;
+        }
+
+        function getDaysInMonth(year, month) {
+            return new Date(year, month + 1, 0).getDate();
+        }
 
         function updateClock() {
             const now = new Date();
@@ -326,28 +448,55 @@
             const parts = formatter.formatToParts(now);
             const date = `${parts[4].value}-${parts[2].value}-${parts[0].value}`;
             const time = `${parts[6].value}:${parts[8].value}:${parts[10].value}`;
-            document.getElementById('clock').textContent = `${date} ${time} (GMT+07)`;
+            const clockElement = document.getElementById('clock');
+            if (clockElement) {
+                clockElement.textContent = `${date} ${time} (GMT+07)`;
+            } else {
+                console.error('Clock element not found');
+            }
         }
         setInterval(updateClock, 1000);
         updateClock();
 
         function openSalesModal() {
             const modal = document.getElementById('salesModal');
-            modal.style.display = 'flex';
-            updateSalesModal();
+            if (modal) {
+                modal.style.display = 'flex';
+                updateSalesModal();
+            } else {
+                console.error('Sales modal element not found');
+            }
         }
 
         function closeSalesModal() {
             const modal = document.getElementById('salesModal');
-            modal.style.display = 'none';
+            if (modal) {
+                modal.style.display = 'none';
+            } else {
+                console.error('Sales modal element not found');
+            }
         }
 
         function updateSalesModal() {
             const platform = document.getElementById('platformFilter').value;
             const dateRange = document.getElementById('dateRange').value.split(" to ");
-            const startDate = dateRange[0] ? new Date(dateRange[0]) : null;
-            const endDate = dateRange[1] ? new Date(dateRange[1]) : (startDate ? new Date(startDate) : null);
+            let startDate = dateRange[0] ? new Date(dateRange[0]) : null;
+            let endDate = dateRange[1] ? new Date(dateRange[1]) : (startDate ? new Date(startDate) : null);
             const selectedCategories = categoryChoices.getValue(true);
+
+            // ปรับ startDate และ endDate ตาม calendarMode (เหมือนใน updateDashboard)
+            if (calendarMode === 'year' && startDate) {
+                const year = startDate.getFullYear();
+                startDate = new Date(year, 0, 1);
+                endDate = new Date(year, 11, 31);
+            } else if (calendarMode === 'month' && startDate) {
+                const year = startDate.getFullYear();
+                const month = startDate.getMonth();
+                startDate = new Date(year, month, 1);
+                endDate = new Date(year, month, getDaysInMonth(year, month));
+            } else if (calendarMode === 'day' && startDate) {
+                endDate = new Date(startDate);
+            }
 
             let filteredData = rawData;
             if (platform !== 'all') {
@@ -363,43 +512,65 @@
                 filteredData = filteredData.filter(d => selectedCategories.includes(d.Category.replace(/\n/g, ' ')));
             }
 
+            console.log('Filtered data for modal:', filteredData);
+
             const categorySales = {};
             const categoryCount = {};
             filteredData.forEach(d => {
-                if (d.Sales) {
-                    const cleanCategory = d.Category.replace(/\n/g, ' ');
+                // ตรวจสอบว่า Sales เป็นตัวเลขที่ถูกต้อง
+                if (d.Sales && !isNaN(Number(d.Sales)) && d.Category) {
+                    const cleanCategory = d.Category.replace(/\n/g, ' ').trim();
                     categorySales[cleanCategory] = (categorySales[cleanCategory] || 0) + Number(d.Sales);
                     categoryCount[cleanCategory] = (categoryCount[cleanCategory] || 0) + 1;
                 }
             });
 
+            console.log('Category sales:', categorySales);
+            console.log('Category count:', categoryCount);
+
             const totalSales = Object.values(categorySales).reduce((sum, sales) => sum + sales, 0);
             const allCategories = Object.entries(categorySales)
-                .sort((a, b) => b[1] - a[1])
                 .map(([category, sales]) => ({
                     category,
                     sales,
                     count: categoryCount[category] || 0,
                     percentage: totalSales > 0 ? (sales / totalSales * 100).toFixed(1) : 0
-                }));
+                }))
+                .sort((a, b) => b.sales - a.sales); // เรียงจากยอดขายมากไปน้อย
+
+            console.log('All categories for table:', allCategories);
 
             const tableBody = document.querySelector('#allSalesTable tbody');
-            tableBody.innerHTML = '';
-            allCategories.forEach(item => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${item.category}</td>
-                    <td>${item.count.toLocaleString()}</td>
-                    <td>${item.sales.toLocaleString()}</td>
-                    <td>${item.percentage}%</td>
-                `;
-                tableBody.appendChild(row);
-            });
+            const noDataMessage = document.getElementById('noDataMessage');
+            if (tableBody && noDataMessage) {
+                tableBody.innerHTML = '';
+                if (allCategories.length === 0) {
+                    noDataMessage.style.display = 'block';
+                } else {
+                    noDataMessage.style.display = 'none';
+                    allCategories.forEach(item => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${item.category}</td>
+                            <td>${item.count.toLocaleString()}</td>
+                            <td>${item.sales.toLocaleString()}</td>
+                            <td>${item.percentage}%</td>
+                        `;
+                        tableBody.appendChild(row);
+                    });
+                }
+            } else {
+                console.error('allSalesTable tbody or noDataMessage not found');
+            }
         }
 
         async function loadData() {
+            console.log('Starting loadData...');
+            const errorMessage = document.getElementById('errorMessage');
+            console.log('errorMessage element:', errorMessage);
             try {
                 const response = await fetch('sales_data.json');
+                console.log('Fetch response:', response);
                 if (!response.ok) {
                     throw new Error(`HTTP error! Status: ${response.status}`);
                 }
@@ -409,7 +580,7 @@
                     throw new Error('No data found in sales_data.json');
                 }
                 rawData = data;
-                const categories = [...new Set(data.map(d => d.Category.replace(/\n/g, ' ')))];
+                const categories = [...new Set(data.map(d => d.Category ? d.Category.replace(/\n/g, ' ').trim() : 'Unknown'))];
                 categoryChoices.setChoices(
                     [{ value: 'all', label: 'ทุกหมวดหมู่' }].concat(categories.map(cat => ({ value: cat, label: cat }))),
                     'value',
@@ -419,15 +590,20 @@
                 updateDashboard();
             } catch (error) {
                 console.error('Error loading data:', error);
-                const errorMessage = document.getElementById('errorMessage');
-                errorMessage.textContent = `ไม่สามารถโหลดข้อมูลได้: ${error.message}`;
-                errorMessage.style.display = 'block';
+                if (errorMessage) {
+                    errorMessage.textContent = `ไม่สามารถโหลดข้อมูลได้: ${error.message}`;
+                    errorMessage.style.display = 'block';
+                } else {
+                    console.error('Error message element not found');
+                }
             }
         }
 
-        flatpickr("#dateRange", {
+        const flatpickrInstance = flatpickr("#dateRange", {
             mode: "range",
             dateFormat: "Y-m-d",
+            appendTo: document.querySelector('.date-picker-wrapper'),
+            static: true,
             locale: {
                 firstDayOfWeek: 1,
                 weekdays: {
@@ -435,21 +611,151 @@
                     longhand: ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"]
                 },
                 months: {
-                    shorthand: ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."],
-                    longhand: ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"]
+                    shorthand: thaiMonths,
+                    longhand: thaiLongMonths
+                }
+            },
+            onOpen: function(selectedDates, dateStr, instance) {
+                console.log('Flatpickr opened, calendar parent:', instance.calendarContainer.parentNode);
+                console.log('Calendar position:', instance.calendarContainer.getBoundingClientRect());
+                const calendar = instance.calendarContainer;
+                let modesContainer = calendar.querySelector('.calendar-modes');
+                if (!modesContainer) {
+                    modesContainer = document.createElement('div');
+                    modesContainer.className = 'calendar-modes';
+                    modesContainer.innerHTML = `
+                        <button class="calendar-mode-btn" data-mode="year">ปี</button>
+                        <button class="calendar-mode-btn" data-mode="month">เดือน</button>
+                        <button class="calendar-mode-btn" data-mode="day">วัน</button>
+                        <button class="calendar-mode-btn active" data-mode="custom">กำหนดเอง</button>
+                    `;
+                    calendar.insertBefore(modesContainer, calendar.firstChild);
+
+                    const modeButtons = modesContainer.querySelectorAll('.calendar-mode-btn');
+                    modeButtons.forEach(button => {
+                        button.addEventListener('click', () => {
+                            modeButtons.forEach(btn => btn.classList.remove('active'));
+                            button.classList.add('active');
+                            calendarMode = button.dataset.mode;
+                            console.log('Changed to mode:', calendarMode);
+                            updateCalendarView(instance, selectedDates);
+                        });
+                    });
+                }
+
+                let selectContainer = calendar.querySelector('.custom-select-container');
+                if (!selectContainer) {
+                    selectContainer = document.createElement('div');
+                    selectContainer.className = 'custom-select-container';
+                    calendar.appendChild(selectContainer);
+                }
+
+                let customSelect = selectContainer.querySelector('.calendar-custom-select');
+                if (!customSelect) {
+                    customSelect = document.createElement('select');
+                    customSelect.className = 'calendar-custom-select';
+                    selectContainer.appendChild(customSelect);
+                    console.log('Created new custom select');
+                }
+
+                updateCalendarView(instance, selectedDates);
+            },
+            onChange: function(selectedDates, dateStr, instance) {
+                if (calendarMode === 'year' || calendarMode === 'month' || calendarMode === 'day') {
+                    instance.close();
+                    updateDashboard();
+                }
+            },
+            onMonthChange: function() {
+                if (calendarMode !== 'year' && calendarMode !== 'month') {
+                    this.redraw();
+                }
+            },
+            onYearChange: function() {
+                if (calendarMode !== 'year' && calendarMode !== 'month') {
+                    this.redraw();
                 }
             }
         });
 
+        function updateCalendarView(instance, selectedDates) {
+            const calendar = instance.calendarContainer;
+            const selectContainer = calendar.querySelector('.custom-select-container');
+            const customSelect = selectContainer.querySelector('.calendar-custom-select');
+            const dayContainer = calendar.querySelector('.flatpickr-days');
+            const monthNav = calendar.querySelector('.flatpickr-month');
+
+            console.log('Updating calendar view for mode:', calendarMode);
+
+            if (calendarMode === 'year' || calendarMode === 'month') {
+                if (dayContainer) dayContainer.className = 'flatpickr-days calendar-hidden';
+                if (monthNav) monthNav.className = 'flatpickr-month calendar-hidden';
+
+                if (customSelect) {
+                    customSelect.style.display = 'block';
+                    customSelect.style.visibility = 'visible';
+                    console.log('Showing custom select');
+                }
+
+                if (calendarMode === 'year') {
+                    let years = [...new Set(rawData.map(d => new Date(d.Date).getFullYear()))].sort((a, b) => a - b);
+                    if (years.length === 0) {
+                        years = [2023, 2024, 2025];
+                        console.warn('No years found in rawData, using fallback years: [2023, 2024, 2025]');
+                    }
+                    console.log('Available years:', years);
+                    customSelect.innerHTML = years.map(year => `<option value="${year}">${year}</option>`).join('');
+                    customSelect.value = selectedDates[0] ? selectedDates[0].getFullYear() : years[0];
+                    customSelect.onchange = () => {
+                        instance.setDate(new Date(customSelect.value, 0, 1));
+                        instance.close();
+                        updateDashboard();
+                        console.log('Selected year:', customSelect.value);
+                    };
+                } else if (calendarMode === 'month') {
+                    const selectedYear = selectedDates[0] ? selectedDates[0].getFullYear() : new Date().getFullYear();
+                    customSelect.innerHTML = thaiLongMonths.map((month, index) => `<option value="${index}">${month}</option>`).join('');
+                    customSelect.value = selectedDates[0] ? selectedDates[0].getMonth() : new Date().getMonth();
+                    customSelect.onchange = () => {
+                        instance.setDate(new Date(selectedYear, customSelect.value, 1));
+                        instance.close();
+                        updateDashboard();
+                        console.log('Selected month:', customSelect.value, 'Year:', selectedYear);
+                    };
+                }
+                console.log('Custom select HTML:', customSelect.outerHTML);
+            } else {
+                if (dayContainer) dayContainer.className = 'flatpickr-days';
+                if (monthNav) monthNav.className = 'flatpickr-month';
+                if (customSelect) {
+                    customSelect.style.display = 'none';
+                    customSelect.style.visibility = 'hidden';
+                    console.log('Hiding custom select');
+                }
+                instance.config.mode = calendarMode === 'day' ? 'single' : 'range';
+                instance.redraw();
+            }
+        }
+
         function updateDashboard() {
             const platform = document.getElementById('platformFilter').value;
             const dateRange = document.getElementById('dateRange').value.split(" to ");
-            const startDate = dateRange[0] ? new Date(dateRange[0]) : null;
-            const endDate = dateRange[1] ? new Date(dateRange[1]) : (startDate ? new Date(startDate) : null);
-            const groupBy = document.getElementById('groupByFilter').value;
+            let startDate = dateRange[0] ? new Date(dateRange[0]) : null;
+            let endDate = dateRange[1] ? new Date(dateRange[1]) : (startDate ? new Date(startDate) : null);
+            const selectedCategories = categoryChoices.getValue(true);
 
-            console.log('Date range:', { startDate, endDate });
-            console.log('Group by:', groupBy);
+            if (calendarMode === 'year' && startDate) {
+                const year = startDate.getFullYear();
+                startDate = new Date(year, 0, 1);
+                endDate = new Date(year, 11, 31);
+            } else if (calendarMode === 'month' && startDate) {
+                const year = startDate.getFullYear();
+                const month = startDate.getMonth();
+                startDate = new Date(year, month, 1);
+                endDate = new Date(year, month, getDaysInMonth(year, month));
+            } else if (calendarMode === 'day' && startDate) {
+                endDate = new Date(startDate);
+            }
 
             let filteredData = rawData;
             if (platform !== 'all') {
@@ -461,7 +767,6 @@
                     return (!startDate || itemDate >= startDate) && (!endDate || itemDate <= endDate);
                 });
             }
-            const selectedCategories = categoryChoices.getValue(true);
             if (!selectedCategories.includes('all') && selectedCategories.length > 0) {
                 filteredData = filteredData.filter(d => selectedCategories.includes(d.Category.replace(/\n/g, ' ')));
             }
@@ -469,10 +774,17 @@
             console.log('Filtered data:', filteredData);
 
             const totalSales = filteredData.reduce((sum, d) => sum + (Number(d.Sales) || 0), 0);
-            document.getElementById('totalSales').textContent = `ยอดขายรวม: ${totalSales.toLocaleString()} บาท`;
+            const totalSalesElement = document.getElementById('totalSales');
+            if (totalSalesElement) {
+                totalSalesElement.textContent = `ยอดขายรวม: ${totalSales.toLocaleString()} บาท`;
+            } else {
+                console.error('totalSales element not found');
+            }
 
-            let labels, salesData, percentageChanges = [];
-            if (groupBy === 'month') {
+            let labels = [];
+            let salesData = [];
+
+            if (calendarMode === 'year') {
                 const salesByMonth = {};
                 filteredData.forEach(d => {
                     const date = new Date(d.Date);
@@ -482,9 +794,10 @@
                     const monthKey = `${year}-${month}`;
                     const monthLabel = `${thaiMonths[month]} ${thaiYear}`;
                     if (!salesByMonth[monthKey]) {
-                        salesByMonth[monthKey] = { label: monthLabel, sales: 0, year, month };
+                        salesByMonth[monthKey] = { label: monthLabel, sales: 0, count: 0, year, month };
                     }
                     salesByMonth[monthKey].sales += Number(d.Sales) || 0;
+                    salesByMonth[monthKey].count += 1;
                 });
 
                 labels = Object.keys(salesByMonth)
@@ -501,38 +814,99 @@
                         return yearA - yearB || monthA - monthB;
                     })
                     .map(key => salesByMonth[key].sales);
+            } else if (calendarMode === 'month' || calendarMode === 'custom') {
+                const salesByDay = {};
+                filteredData.forEach(d => {
+                    const date = new Date(d.Date);
+                    const year = date.getFullYear();
+                    const month = date.getMonth();
+                    const day = date.getDate();
+                    const dayKey = `${year}-${month}-${day}`;
+                    const dayLabel = `${day} ${thaiMonths[month]}`;
+                    if (!salesByDay[dayKey]) {
+                        salesByDay[dayKey] = { label: dayLabel, sales: 0, count: 0, date };
+                    }
+                    salesByDay[dayKey].sales += Number(d.Sales) || 0;
+                    salesByDay[dayKey].count += 1;
+                });
 
-                percentageChanges = salesData.map((sales, index) => {
-                    if (index === 0) return '-';
-                    const prevSales = salesData[index - 1];
-                    if (prevSales === 0) return sales > 0 ? '∞' : '0%';
-                    const change = ((sales - prevSales) / prevSales) * 100;
-                    return change >= 0 ? `+${change.toFixed(1)}%` : `${change.toFixed(1)}%`;
+                const daysInMonth = calendarMode === 'month' && startDate ? getDaysInMonth(startDate.getFullYear(), startDate.getMonth()) : 31;
+                const year = startDate ? startDate.getFullYear() : new Date().getFullYear();
+                const month = startDate ? startDate.getMonth() : new Date().getMonth();
+                
+                const allDays = Array.from({ length: daysInMonth }, (_, i) => {
+                    const day = i + 1;
+                    const dayKey = `${year}-${month}-${day}`;
+                    return {
+                        dayKey,
+                        label: `${day} ${thaiMonths[month]}`,
+                        sales: salesByDay[dayKey] ? salesByDay[dayKey].sales : 0
+                    };
                 });
-            } else {
-                labels = [...new Set(filteredData.map(d => d.Date))].sort();
-                salesData = labels.map(date => {
-                    return filteredData.filter(d => d.Date === date).reduce((sum, d) => sum + (Number(d.Sales) || 0), 0);
+
+                labels = allDays.map(day => day.label);
+                salesData = allDays.map(day => day.sales);
+
+                console.log('Days in month:', daysInMonth);
+                console.log('Labels (month mode):', labels);
+                console.log('Sales data (month mode):', salesData);
+            } else if (calendarMode === 'day') {
+                const salesByDay = {};
+                filteredData.forEach(d => {
+                    const date = new Date(d.Date);
+                    const year = date.getFullYear();
+                    const month = date.getMonth();
+                    const day = date.getDate();
+                    const dayKey = `${year}-${month}-${day}`;
+                    const dayLabel = formatDate(date);
+                    if (!salesByDay[dayKey]) {
+                        salesByDay[dayKey] = { label: dayLabel, sales: 0, count: 0, date };
+                    }
+                    salesByDay[dayKey].sales += Number(d.Sales) || 0;
+                    salesByDay[dayKey].count += 1;
                 });
-                percentageChanges = salesData.map(() => '');
+
+                labels = Object.keys(salesByDay)
+                    .sort((a, b) => new Date(a.split('-').join('/')) - new Date(b.split('-').join('/')))
+                    .map(key => salesByDay[key].label);
+                salesData = Object.keys(salesByDay)
+                    .sort((a, b) => new Date(a.split('-').join('/')) - new Date(b.split('-').join('/')))
+                    .map(key => salesByDay[key].sales);
             }
 
-            console.log('Labels:', labels);
-            console.log('Sales data:', salesData);
-            console.log('Percentage changes:', percentageChanges);
+            console.log('Final labels:', labels);
+            console.log('Final sales data:', salesData);
 
             if (salesChart) salesChart.destroy();
             const salesCtx = document.getElementById('salesChart').getContext('2d');
             salesChart = new Chart(salesCtx, {
-                type: 'line',
+                type: calendarMode === 'day' ? 'bar' : 'line',
                 data: {
                     labels: labels,
                     datasets: [{
                         label: 'ยอดขาย (บาท)',
                         data: salesData,
-                        borderColor: '#e74c3c',
-                        fill: false,
-                        tension: 0.1
+                        borderColor: function(context) {
+                            if (calendarMode === 'day') return '#38bdf8';
+                            const chart = context.chart;
+                            const {ctx, chartArea} = chart;
+                            if (!chartArea) return '#38bdf8';
+                            const gradient = ctx.createLinearGradient(chartArea.left, 0, chartArea.right, 0);
+                            gradient.addColorStop(0, '#38bdf8');
+                            gradient.addColorStop(1, '#1e40af');
+                            return gradient;
+                        },
+                        backgroundColor: calendarMode === 'day' ? '#38bdf8' : 'rgba(56, 189, 248, 0.2)',
+                        fill: calendarMode !== 'day',
+                        tension: 0.3,
+                        pointBackgroundColor: '#ffffff',
+                        pointBorderColor: '#38bdf8',
+                        pointBorderWidth: 2,
+                        pointRadius: calendarMode === 'day' ? 0 : 5,
+                        pointHoverRadius: calendarMode === 'day' ? 0 : 8,
+                        borderWidth: calendarMode === 'day' ? 1 : 2,
+                        barThickness: calendarMode === 'day' ? 40 : undefined,
+                        borderRadius: calendarMode === 'day' ? 5 : undefined
                     }]
                 },
                 options: {
@@ -540,115 +914,100 @@
                     scales: {
                         y: {
                             beginAtZero: true,
-                            title: { display: true, text: 'ยอดขาย (บาท)' }
+                            title: { display: true, text: 'ยอดขาย (บาท)', color: '#2c3e50' },
+                            grid: { color: '#e5e7eb' },
+                            ticks: { color: '#2c3e50' }
                         },
                         x: {
-                            title: { display: true, text: groupBy === 'month' ? 'เดือน' : 'วันที่' }
+                            title: {
+                                display: true,
+                                text: calendarMode === 'year' ? 'เดือน' : calendarMode === 'month' ? 'วัน' : calendarMode === 'day' ? 'วัน' : 'วันที่',
+                                color: '#2c3e50'
+                            },
+                            grid: { color: '#e5e7eb' },
+                            ticks: { color: '#2c3e50', autoSkip: true, maxTicksLimit: 10 },
+                            reverse: false
                         }
                     },
                     plugins: {
-                        datalabels: {
-                            display: groupBy === 'month',
-                            align: 'top',
-                            offset: 10,
-                            formatter: (value, ctx) => percentageChanges[ctx.dataIndex] || '',
-                            color: '#2c3e50',
-                            font: {
-                                weight: 'bold',
-                                size: 12
-                            }
-                        },
+                        datalabels: { display: false },
                         tooltip: {
                             callbacks: {
                                 label: function(context) {
-                                    const index = context.dataIndex;
                                     const sales = context.parsed.y;
-                                    const percentage = percentageChanges[index] || '';
-                                    return `ยอดขาย: ${sales.toLocaleString()} บาท ${percentage}`;
+                                    return `ยอดขาย: ${sales.toLocaleString()} บาท`;
                                 }
-                            }
+                            },
+                            backgroundColor: 'rgba(30, 64, 175, 0.8)',
+                            titleColor: '#ffffff',
+                            bodyColor: '#ffffff'
                         }
                     }
                 },
                 plugins: [ChartDataLabels]
             });
 
-            const salesByMonth = {};
-            filteredData.forEach(d => {
-                const date = new Date(d.Date);
-                const year = date.getFullYear();
-                const month = date.getMonth();
-                const thaiYear = year + 543 - 2500;
-                const monthKey = `${year}-${month}`;
-                const monthLabel = `${thaiMonths[month]} ${thaiYear}`;
-                if (!salesByMonth[monthKey]) {
-                    salesByMonth[monthKey] = { label: monthLabel, sales: 0, year, month };
-                }
-                salesByMonth[monthKey].sales += Number(d.Sales) || 0;
-            });
-
-            const pieLabels = Object.keys(salesByMonth)
-                .sort((a, b) => {
-                    const [yearA, monthA] = a.split('-').map(Number);
-                    const [yearB, monthB] = b.split('-').map(Number);
-                    return yearA - yearB || monthA - monthB;
-                })
-                .map(key => salesByMonth[key].label);
-            const pieSalesData = Object.keys(salesByMonth)
-                .sort((a, b) => {
-                    const [yearA, monthA] = a.split('-').map(Number);
-                    const [yearB, monthB] = b.split('-').map(Number);
-                    return yearA - yearB || monthA - monthB;
-                })
-                .map(key => salesByMonth[key].sales);
+            let pieLabels = labels;
+            let pieSalesData = salesData;
+            if (calendarMode === 'day') {
+                const categorySales = {};
+                filteredData.forEach(d => {
+                    const cleanCategory = d.Category.replace(/\n/g, ' ');
+                    categorySales[cleanCategory] = (categorySales[cleanCategory] || 0) + Number(d.Sales) || 0;
+                });
+                pieLabels = Object.keys(categorySales);
+                pieSalesData = Object.values(categorySales);
+            }
 
             const totalSalesForPie = pieSalesData.reduce((sum, val) => sum + val, 0);
-            const percentages = pieSalesData.map(sales => totalSalesForPie > 0 ? (sales / totalSalesForPie * 100).toFixed(1) : 0);
+            const piePercentages = pieSalesData.map(sales => totalSalesForPie > 0 ? (sales / totalSalesForPie * 100).toFixed(1) : 0);
 
             if (categoryPieChart) categoryPieChart.destroy();
             const categoryPieCtx = document.getElementById('categoryPieChart').getContext('2d');
             categoryPieChart = new Chart(categoryPieCtx, {
-                type: 'pie',
+                type: 'doughnut',
                 data: {
                     labels: pieLabels,
                     datasets: [{
-                        label: 'ยอดขายตามเดือน (%)',
+                        label: calendarMode === 'day' ? 'ยอดขายตามหมวดหมู่ (บาท)' : calendarMode === 'year' ? 'ยอดขายตามเดือน (บาท)' : 'ยอดขายตามวัน (บาท)',
                         data: pieSalesData,
-                        backgroundColor: colorPalette.slice(0, pieLabels.length),
-                        borderColor: '#fff',
+                        backgroundColor: pieLabels.map((_, i) => colorPalette[i % colorPalette.length]),
+                        borderColor: '#ffffff',
                         borderWidth: 2
                     }]
                 },
                 options: {
                     responsive: true,
+                    cutout: '50%',
                     plugins: {
-                        legend: {
-                            position: 'right',
-                            labels: {
-                                font: {
-                                    size: 14
-                                },
-                                boxWidth: 20,
-                                padding: 15
-                            }
-                        },
+                        legend: { display: true, position: 'bottom' },
                         title: {
                             display: true,
-                            text: 'สัดส่วนยอดขายตามเดือน (%)',
-                            font: {
-                                size: 16
-                            }
+                            text: calendarMode === 'day' ? 'ยอดขายตามหมวดหมู่ (บาท)' : calendarMode === 'year' ? 'ยอดขายตามเดือน (บาท)' : 'ยอดขายตามวัน (บาท)',
+                            font: { size: 16 },
+                            color: '#2c3e50'
                         },
                         datalabels: {
-                            formatter: (value, ctx) => {
-                                return percentages[ctx.dataIndex] + '%';
-                            },
-                            color: '#fff',
+                            formatter: (value, ctx) => piePercentages[ctx.dataIndex] + '%',
+                            color: '#2c3e50',
                             font: {
                                 weight: 'bold',
                                 size: 12
                             },
-                            textAlign: 'center'
+                            textShadowColor: 'rgba(0,0,0,0.5)',
+                            textShadowBlur: 5
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const sales = context.parsed;
+                                    const percentage = piePercentages[context.dataIndex];
+                                    return `ยอดขาย: ${sales.toLocaleString()} บาท (${percentage}%)`;
+                                }
+                            },
+                            backgroundColor: 'rgba(30, 64, 175, 0.8)',
+                            titleColor: '#ffffff',
+                            bodyColor: '#ffffff'
                         }
                     }
                 },
@@ -664,39 +1023,125 @@
                     categoryCount[cleanCategory] = (categoryCount[cleanCategory] || 0) + 1;
                 }
             });
-            const totalTopSales = Object.values(categorySales)
-                .sort((a, b) => b - a)
-                .slice(0, 5)
-                .reduce((sum, sales) => sum + sales, 0);
+
             const topCategories = Object.entries(categorySales)
                 .map(([category, sales]) => ({
                     category,
                     sales,
-                    count: categoryCount[category] || 0,
-                    percentage: totalTopSales > 0 ? (sales / totalTopSales * 100).toFixed(1) : 0
+                    count: categoryCount[category] || 0
                 }))
                 .sort((a, b) => b.sales - a.sales)
                 .slice(0, 5);
 
-            const tableBody = document.querySelector('#topCategoriesTable tbody');
-            tableBody.innerHTML = '';
-            topCategories.forEach(item => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${item.category}</td>
-                    <td>${item.count.toLocaleString()}</td>
-                    <td>${item.sales.toLocaleString()}</td>
-                    <td>${item.percentage}%</td>
-                `;
-                tableBody.appendChild(row);
+            const otherSales = Object.entries(categorySales)
+                .slice(5)
+                .reduce((sum, [, sales]) => sum + sales, 0);
+            const otherCount = Object.entries(categoryCount)
+                .slice(5)
+                .reduce((sum, [, count]) => sum + count, 0);
+
+            const barLabels = topCategories.map(item => item.category).concat(otherSales > 0 ? ['อื่นๆ'] : []);
+            const barSalesData = topCategories.map(item => item.sales).concat(otherSales > 0 ? [otherSales] : []);
+            const totalSalesForBar = barSalesData.reduce((sum, val) => sum + val, 0);
+            const barPercentages = barSalesData.map(sales => totalSalesForBar > 0 ? (sales / totalSalesForBar * 100).toFixed(1) : 0);
+
+            if (topProductsBarChart) topProductsBarChart.destroy();
+            const topProductsBarCtx = document.getElementById('topProductsBarChart').getContext('2d');
+            topProductsBarChart = new Chart(topProductsBarCtx, {
+                type: 'bar',
+                data: {
+                    labels: barLabels,
+                    datasets: [{
+                        label: 'ยอดขายสินค้า (บาท)',
+                        data: barSalesData,
+                        backgroundColor: barLabels.map((_, i) => colorPalette[i % colorPalette.length]),
+                        borderColor: '#ffffff',
+                        borderWidth: 1,
+                        borderRadius: 5,
+                        barThickness: 40
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'ยอดขาย (บาท)', color: '#2c3e50' },
+                            grid: { color: '#e5e7eb' },
+                            ticks: { color: '#2c3e50' }
+                        },
+                        x: {
+                            title: { display: true, text: 'หมวดหมู่', color: '#2c3e50' },
+                            grid: { display: false },
+                            ticks: { color: '#2c3e50' }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        title: {
+                            display: true,
+                            text: 'ยอดขาย 5 อันดับแรกและอื่นๆ (บาท)',
+                            font: { size: 16 },
+                            color: '#2c3e50'
+                        },
+                        datalabels: {
+                            anchor: 'end',
+                            align: 'top',
+                            offset: 5,
+                            formatter: (value, ctx) => barPercentages[ctx.dataIndex] + '%',
+                            color: '#2c3e50',
+                            font: {
+                                weight: 'bold',
+                                size: 12
+                            },
+                            textShadowColor: 'rgba(0,0,0,0.5)',
+                            textShadowBlur: 5
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const sales = context.parsed.y;
+                                    const percentage = barPercentages[ctx.dataIndex];
+                                    return `ยอดขาย: ${sales.toLocaleString()} บาท (${percentage}%)`;
+                                }
+                            },
+                            backgroundColor: 'rgba(30, 64, 175, 0.8)',
+                            titleColor: '#ffffff',
+                            bodyColor: '#ffffff'
+                        }
+                    }
+                },
+                plugins: [ChartDataLabels]
             });
+
+            const totalTopSales = topCategories.reduce((sum, item) => sum + item.sales, 0);
+            const topCategoriesWithPercentage = topCategories.map(item => ({
+                ...item,
+                percentage: totalTopSales > 0 ? (item.sales / totalTopSales * 100).toFixed(1) : 0
+            }));
+
+            const tableBody = document.querySelector('#topCategoriesTable tbody');
+            if (tableBody) {
+                tableBody.innerHTML = '';
+                topCategoriesWithPercentage.forEach(item => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${item.category}</td>
+                        <td>${item.count.toLocaleString()}</td>
+                        <td>${item.sales.toLocaleString()}</td>
+                        <td>${item.percentage}%</td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            } else {
+                console.error('topCategoriesTable tbody not found');
+            }
         }
 
-        document.addEventListener('DOMContentLoaded', loadData);
-
-        document.getElementById('platformFilter').addEventListener('change', updateDashboard);
-        document.getElementById('groupByFilter').addEventListener('change', updateDashboard);
-        categoryChoices.passedElement.element.addEventListener('change', updateDashboard);
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOM fully loaded');
+            loadData();
+        });
     </script>
 </body>
 </html>
