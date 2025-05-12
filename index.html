@@ -98,6 +98,8 @@
         }
         .choices {
             width: 200px;
+            position: relative; /* เพิ่มเพื่อให้ dropdown ใช้ตำแหน่งจาก .choices */
+            z-index: 1000; /* ทำให้ .choices อยู่เหนือองค์ประกอบอื่น */
         }
         .choices__inner {
             padding: 0;
@@ -329,6 +331,23 @@
             font-size: 1.2em;
             margin: 20px 0;
         }
+        .calendar-clear-btn {
+            display: block;
+            margin: 10px auto;
+            padding: 8px 16px;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+        .calendar-clear-btn:hover {
+            background: #c0392b;
+            transform: translateY(-2px);
+        }
     </style>
 </head>
 <body>
@@ -393,737 +412,175 @@
         </div>
     </div>
 
-    <script>
-        let rawData = [];
-        let salesChart, categoryPieChart, topProductsBarChart;
-        let calendarMode = 'custom';
-        const categoryChoices = new Choices('#categoryFilter', {
-            removeItemButton: true,
-            placeholderValue: 'เลือกหมวดหมู่',
-            noChoicesText: 'ไม่มีหมวดหมู่ให้เลือก',
-            itemSelectText: '',
-            maxItemCount: -1,
-            renderSelectedChoices: 'always'
-        });
+<script>
+    let rawData = [];
+    let salesChart, categoryPieChart, topProductsBarChart;
+    let calendarMode = 'custom';
+    const categoryChoices = new Choices('#categoryFilter', {
+        removeItemButton: true,
+        placeholderValue: 'เลือกหมวดหมู่',
+        noChoicesText: 'ไม่มีหมวดหมู่ให้เลือก',
+        itemSelectText: '',
+        maxItemCount: -1,
+        renderSelectedChoices: 'always'
+    });
 
-        const colorPalette = [
-            '#38bdf8', '#60a5fa', '#93c5fd', '#bfdbfe', '#dbeafe',
-            '#0284c7', '#2563eb', '#1d4ed8', '#1e40af', '#1e3a8a'
-        ];
+    const colorPalette = [
+        '#38bdf8', '#60a5fa', '#93c5fd', '#bfdbfe', '#dbeafe',
+        '#0284c7', '#2563eb', '#1d4ed8', '#1e40af', '#1e3a8a'
+    ];
 
-        const thaiMonths = [
-            'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.',
-            'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'
-        ];
+    const thaiMonths = [
+        'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.',
+        'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'
+    ];
 
-        const thaiLongMonths = [
-            'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
-            'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
-        ];
+    const thaiLongMonths = [
+        'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+        'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
+    ];
 
-        function formatDate(date) {
-            const day = date.getDate();
-            const month = thaiMonths[date.getMonth()];
-            const year = date.getFullYear();
-            return `${day} ${month} ${year}`;
+    function formatDate(date) {
+        const day = date.getDate();
+        const month = thaiMonths[date.getMonth()];
+        const year = date.getFullYear();
+        return `${day} ${month} ${year}`;
+    }
+
+    function getDaysInMonth(year, month) {
+        return new Date(year, month + 1, 0).getDate();
+    }
+
+    function updateClock() {
+        const now = new Date();
+        const options = {
+            timeZone: 'Asia/Bangkok',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+        };
+        const formatter = new Intl.DateTimeFormat('th-TH', options);
+        const parts = formatter.formatToParts(now);
+        const date = `${parts[4].value}-${parts[2].value}-${parts[0].value}`;
+        const time = `${parts[6].value}:${parts[8].value}:${parts[10].value}`;
+        const clockElement = document.getElementById('clock');
+        if (clockElement) {
+            clockElement.textContent = `${date} ${time} (GMT+07)`;
+        } else {
+            console.error('Clock element not found');
+        }
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    function openSalesModal() {
+        const modal = document.getElementById('salesModal');
+        if (modal) {
+            modal.style.display = 'flex';
+            updateSalesModal();
+        } else {
+            console.error('Sales modal element not found');
+        }
+    }
+
+    function closeSalesModal() {
+        const modal = document.getElementById('salesModal');
+        if (modal) {
+            modal.style.display = 'none';
+        } else {
+            console.error('Sales modal element not found');
+        }
+    }
+
+    function updateSalesModal() {
+        console.log('Starting updateSalesModal...');
+        const platform = document.getElementById('platformFilter').value;
+        const dateRange = document.getElementById('dateRange').value.split(" to ");
+        let startDate = dateRange[0] ? new Date(dateRange[0]) : null;
+        let endDate = dateRange[1] ? new Date(dateRange[1]) : (startDate ? new Date(startDate) : null);
+        const selectedCategories = categoryChoices.getValue(true);
+
+        console.log('Modal - Platform:', platform, 'Date range:', dateRange, 'Calendar mode:', calendarMode);
+
+        if (calendarMode === 'year' && startDate) {
+            const year = startDate.getFullYear();
+            startDate = new Date(year, 0, 1);
+            endDate = new Date(year, 11, 31);
+        } else if (calendarMode === 'month' && startDate) {
+            const year = startDate.getFullYear();
+            const month = startDate.getMonth();
+            startDate = new Date(year, month, 1);
+            endDate = new Date(year, month, getDaysInMonth(year, month));
+        } else if (calendarMode === 'day' && startDate) {
+            endDate = new Date(startDate);
         }
 
-        function getDaysInMonth(year, month) {
-            return new Date(year, month + 1, 0).getDate();
+        console.log('Modal - Start date:', startDate, 'End date:', endDate);
+
+        let filteredData = rawData;
+        if (platform !== 'all') {
+            filteredData = filteredData.filter(d => d.Platform === platform);
         }
-
-        function updateClock() {
-            const now = new Date();
-            const options = {
-                timeZone: 'Asia/Bangkok',
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-                hour12: false
-            };
-            const formatter = new Intl.DateTimeFormat('th-TH', options);
-            const parts = formatter.formatToParts(now);
-            const date = `${parts[4].value}-${parts[2].value}-${parts[0].value}`;
-            const time = `${parts[6].value}:${parts[8].value}:${parts[10].value}`;
-            const clockElement = document.getElementById('clock');
-            if (clockElement) {
-                clockElement.textContent = `${date} ${time} (GMT+07)`;
-            } else {
-                console.error('Clock element not found');
-            }
-        }
-        setInterval(updateClock, 1000);
-        updateClock();
-
-        function openSalesModal() {
-            const modal = document.getElementById('salesModal');
-            if (modal) {
-                modal.style.display = 'flex';
-                updateSalesModal();
-            } else {
-                console.error('Sales modal element not found');
-            }
-        }
-
-        function closeSalesModal() {
-            const modal = document.getElementById('salesModal');
-            if (modal) {
-                modal.style.display = 'none';
-            } else {
-                console.error('Sales modal element not found');
-            }
-        }
-
-        function updateSalesModal() {
-            const platform = document.getElementById('platformFilter').value;
-            const dateRange = document.getElementById('dateRange').value.split(" to ");
-            let startDate = dateRange[0] ? new Date(dateRange[0]) : null;
-            let endDate = dateRange[1] ? new Date(dateRange[1]) : (startDate ? new Date(startDate) : null);
-            const selectedCategories = categoryChoices.getValue(true);
-
-            // ปรับ startDate และ endDate ตาม calendarMode (เหมือนใน updateDashboard)
-            if (calendarMode === 'year' && startDate) {
-                const year = startDate.getFullYear();
-                startDate = new Date(year, 0, 1);
-                endDate = new Date(year, 11, 31);
-            } else if (calendarMode === 'month' && startDate) {
-                const year = startDate.getFullYear();
-                const month = startDate.getMonth();
-                startDate = new Date(year, month, 1);
-                endDate = new Date(year, month, getDaysInMonth(year, month));
-            } else if (calendarMode === 'day' && startDate) {
-                endDate = new Date(startDate);
-            }
-
-            let filteredData = rawData;
-            if (platform !== 'all') {
-                filteredData = filteredData.filter(d => d.Platform === platform);
-            }
-            if (startDate) {
-                filteredData = filteredData.filter(d => {
-                    const itemDate = new Date(d.Date);
-                    return (!startDate || itemDate >= startDate) && (!endDate || itemDate <= endDate);
-                });
-            }
-            if (!selectedCategories.includes('all') && selectedCategories.length > 0) {
-                filteredData = filteredData.filter(d => selectedCategories.includes(d.Category.replace(/\n/g, ' ')));
-            }
-
-            console.log('Filtered data for modal:', filteredData);
-
-            const categorySales = {};
-            const categoryCount = {};
-            filteredData.forEach(d => {
-                // ตรวจสอบว่า Sales เป็นตัวเลขที่ถูกต้อง
-                if (d.Sales && !isNaN(Number(d.Sales)) && d.Category) {
-                    const cleanCategory = d.Category.replace(/\n/g, ' ').trim();
-                    categorySales[cleanCategory] = (categorySales[cleanCategory] || 0) + Number(d.Sales);
-                    categoryCount[cleanCategory] = (categoryCount[cleanCategory] || 0) + 1;
+        let allDataBeforeFilter = [];
+        if (startDate && endDate) {
+            allDataBeforeFilter = filteredData.map(d => ({ Date: d.Date, Sales: d.Sales }));
+            filteredData = filteredData.filter(d => {
+                const itemDate = new Date(d.Date);
+                if (isNaN(itemDate.getTime())) {
+                    console.warn('Invalid date in filtered data (modal):', d);
+                    return false;
                 }
+                return itemDate.getFullYear() === startDate.getFullYear() && 
+                       itemDate.getMonth() === startDate.getMonth() && 
+                       (calendarMode !== 'day' || itemDate.getDate() === startDate.getDate());
             });
-
-            console.log('Category sales:', categorySales);
-            console.log('Category count:', categoryCount);
-
-            const totalSales = Object.values(categorySales).reduce((sum, sales) => sum + sales, 0);
-            const allCategories = Object.entries(categorySales)
-                .map(([category, sales]) => ({
-                    category,
-                    sales,
-                    count: categoryCount[category] || 0,
-                    percentage: totalSales > 0 ? (sales / totalSales * 100).toFixed(1) : 0
-                }))
-                .sort((a, b) => b.sales - a.sales); // เรียงจากยอดขายมากไปน้อย
-
-            console.log('All categories for table:', allCategories);
-
-            const tableBody = document.querySelector('#allSalesTable tbody');
-            const noDataMessage = document.getElementById('noDataMessage');
-            if (tableBody && noDataMessage) {
-                tableBody.innerHTML = '';
-                if (allCategories.length === 0) {
-                    noDataMessage.style.display = 'block';
-                } else {
-                    noDataMessage.style.display = 'none';
-                    allCategories.forEach(item => {
-                        const row = document.createElement('tr');
-                        row.innerHTML = `
-                            <td>${item.category}</td>
-                            <td>${item.count.toLocaleString()}</td>
-                            <td>${item.sales.toLocaleString()}</td>
-                            <td>${item.percentage}%</td>
-                        `;
-                        tableBody.appendChild(row);
-                    });
-                }
-            } else {
-                console.error('allSalesTable tbody or noDataMessage not found');
-            }
+            console.log('Modal - Data before date filter:', allDataBeforeFilter);
+            console.log('Modal - Filtered data:', filteredData.map(d => ({ Date: d.Date, Sales: d.Sales })));
+            console.log('Modal - Filtered data sales sum:', filteredData.reduce((sum, d) => sum + Number(d.Sales), 0));
+        }
+        if (!selectedCategories.includes('all') && selectedCategories.length > 0) {
+            filteredData = filteredData.filter(d => selectedCategories.includes(d.Category.replace(/\n/g, ' ')));
         }
 
-        async function loadData() {
-            console.log('Starting loadData...');
-            const errorMessage = document.getElementById('errorMessage');
-            console.log('errorMessage element:', errorMessage);
-            try {
-                const response = await fetch('sales_data.json');
-                console.log('Fetch response:', response);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! Status: ${response.status}`);
-                }
-                const data = await response.json();
-                console.log('Loaded data:', data);
-                if (!data || data.length === 0) {
-                    throw new Error('No data found in sales_data.json');
-                }
-                rawData = data;
-                const categories = [...new Set(data.map(d => d.Category ? d.Category.replace(/\n/g, ' ').trim() : 'Unknown'))];
-                categoryChoices.setChoices(
-                    [{ value: 'all', label: 'ทุกหมวดหมู่' }].concat(categories.map(cat => ({ value: cat, label: cat }))),
-                    'value',
-                    'label',
-                    true
-                );
-                updateDashboard();
-            } catch (error) {
-                console.error('Error loading data:', error);
-                if (errorMessage) {
-                    errorMessage.textContent = `ไม่สามารถโหลดข้อมูลได้: ${error.message}`;
-                    errorMessage.style.display = 'block';
-                } else {
-                    console.error('Error message element not found');
-                }
-            }
+        if (calendarMode === 'month' && startDate && startDate.getMonth() === 0 && startDate.getFullYear() === 2025) {
+            console.log('Modal - January 2025 data:', filteredData.map(d => ({ Date: d.Date, Sales: d.Sales })));
+            console.log('Modal - January 2025 sales sum:', filteredData.reduce((sum, d) => sum + Number(d.Sales), 0));
         }
 
-        const flatpickrInstance = flatpickr("#dateRange", {
-            mode: "range",
-            dateFormat: "Y-m-d",
-            appendTo: document.querySelector('.date-picker-wrapper'),
-            static: true,
-            locale: {
-                firstDayOfWeek: 1,
-                weekdays: {
-                    shorthand: ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"],
-                    longhand: ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"]
-                },
-                months: {
-                    shorthand: thaiMonths,
-                    longhand: thaiLongMonths
-                }
-            },
-            onOpen: function(selectedDates, dateStr, instance) {
-                console.log('Flatpickr opened, calendar parent:', instance.calendarContainer.parentNode);
-                console.log('Calendar position:', instance.calendarContainer.getBoundingClientRect());
-                const calendar = instance.calendarContainer;
-                let modesContainer = calendar.querySelector('.calendar-modes');
-                if (!modesContainer) {
-                    modesContainer = document.createElement('div');
-                    modesContainer.className = 'calendar-modes';
-                    modesContainer.innerHTML = `
-                        <button class="calendar-mode-btn" data-mode="year">ปี</button>
-                        <button class="calendar-mode-btn" data-mode="month">เดือน</button>
-                        <button class="calendar-mode-btn" data-mode="day">วัน</button>
-                        <button class="calendar-mode-btn active" data-mode="custom">กำหนดเอง</button>
-                    `;
-                    calendar.insertBefore(modesContainer, calendar.firstChild);
-
-                    const modeButtons = modesContainer.querySelectorAll('.calendar-mode-btn');
-                    modeButtons.forEach(button => {
-                        button.addEventListener('click', () => {
-                            modeButtons.forEach(btn => btn.classList.remove('active'));
-                            button.classList.add('active');
-                            calendarMode = button.dataset.mode;
-                            console.log('Changed to mode:', calendarMode);
-                            updateCalendarView(instance, selectedDates);
-                        });
-                    });
-                }
-
-                let selectContainer = calendar.querySelector('.custom-select-container');
-                if (!selectContainer) {
-                    selectContainer = document.createElement('div');
-                    selectContainer.className = 'custom-select-container';
-                    calendar.appendChild(selectContainer);
-                }
-
-                let customSelect = selectContainer.querySelector('.calendar-custom-select');
-                if (!customSelect) {
-                    customSelect = document.createElement('select');
-                    customSelect.className = 'calendar-custom-select';
-                    selectContainer.appendChild(customSelect);
-                    console.log('Created new custom select');
-                }
-
-                updateCalendarView(instance, selectedDates);
-            },
-            onChange: function(selectedDates, dateStr, instance) {
-                if (calendarMode === 'year' || calendarMode === 'month' || calendarMode === 'day') {
-                    instance.close();
-                    updateDashboard();
-                }
-            },
-            onMonthChange: function() {
-                if (calendarMode !== 'year' && calendarMode !== 'month') {
-                    this.redraw();
-                }
-            },
-            onYearChange: function() {
-                if (calendarMode !== 'year' && calendarMode !== 'month') {
-                    this.redraw();
-                }
+        const categorySales = {};
+        const categoryCount = {};
+        filteredData.forEach(d => {
+            if (d.Sales && !isNaN(Number(d.Sales)) && d.Category) {
+                const cleanCategory = d.Category.replace(/\n/g, ' ').trim();
+                categorySales[cleanCategory] = (categorySales[cleanCategory] || 0) + Number(d.Sales);
+                categoryCount[cleanCategory] = (categoryCount[cleanCategory] || 0) + 1;
             }
         });
 
-        function updateCalendarView(instance, selectedDates) {
-            const calendar = instance.calendarContainer;
-            const selectContainer = calendar.querySelector('.custom-select-container');
-            const customSelect = selectContainer.querySelector('.calendar-custom-select');
-            const dayContainer = calendar.querySelector('.flatpickr-days');
-            const monthNav = calendar.querySelector('.flatpickr-month');
+        const totalSales = Object.values(categorySales).reduce((sum, sales) => sum + sales, 0);
+        const allCategories = Object.entries(categorySales)
+            .map(([category, sales]) => ({
+                category,
+                sales,
+                count: categoryCount[category] || 0,
+                percentage: totalSales > 0 ? (sales / totalSales * 100).toFixed(1) : 0
+            }))
+            .sort((a, b) => b.sales - a.sales);
 
-            console.log('Updating calendar view for mode:', calendarMode);
-
-            if (calendarMode === 'year' || calendarMode === 'month') {
-                if (dayContainer) dayContainer.className = 'flatpickr-days calendar-hidden';
-                if (monthNav) monthNav.className = 'flatpickr-month calendar-hidden';
-
-                if (customSelect) {
-                    customSelect.style.display = 'block';
-                    customSelect.style.visibility = 'visible';
-                    console.log('Showing custom select');
-                }
-
-                if (calendarMode === 'year') {
-                    let years = [...new Set(rawData.map(d => new Date(d.Date).getFullYear()))].sort((a, b) => a - b);
-                    if (years.length === 0) {
-                        years = [2023, 2024, 2025];
-                        console.warn('No years found in rawData, using fallback years: [2023, 2024, 2025]');
-                    }
-                    console.log('Available years:', years);
-                    customSelect.innerHTML = years.map(year => `<option value="${year}">${year}</option>`).join('');
-                    customSelect.value = selectedDates[0] ? selectedDates[0].getFullYear() : years[0];
-                    customSelect.onchange = () => {
-                        instance.setDate(new Date(customSelect.value, 0, 1));
-                        instance.close();
-                        updateDashboard();
-                        console.log('Selected year:', customSelect.value);
-                    };
-                } else if (calendarMode === 'month') {
-                    const selectedYear = selectedDates[0] ? selectedDates[0].getFullYear() : new Date().getFullYear();
-                    customSelect.innerHTML = thaiLongMonths.map((month, index) => `<option value="${index}">${month}</option>`).join('');
-                    customSelect.value = selectedDates[0] ? selectedDates[0].getMonth() : new Date().getMonth();
-                    customSelect.onchange = () => {
-                        instance.setDate(new Date(selectedYear, customSelect.value, 1));
-                        instance.close();
-                        updateDashboard();
-                        console.log('Selected month:', customSelect.value, 'Year:', selectedYear);
-                    };
-                }
-                console.log('Custom select HTML:', customSelect.outerHTML);
+        const tableBody = document.querySelector('#allSalesTable tbody');
+        const noDataMessage = document.getElementById('noDataMessage');
+        if (tableBody && noDataMessage) {
+            tableBody.innerHTML = '';
+            if (allCategories.length === 0) {
+                noDataMessage.style.display = 'block';
+                console.warn('Modal - No categories to display');
             } else {
-                if (dayContainer) dayContainer.className = 'flatpickr-days';
-                if (monthNav) monthNav.className = 'flatpickr-month';
-                if (customSelect) {
-                    customSelect.style.display = 'none';
-                    customSelect.style.visibility = 'hidden';
-                    console.log('Hiding custom select');
-                }
-                instance.config.mode = calendarMode === 'day' ? 'single' : 'range';
-                instance.redraw();
-            }
-        }
-
-        function updateDashboard() {
-            const platform = document.getElementById('platformFilter').value;
-            const dateRange = document.getElementById('dateRange').value.split(" to ");
-            let startDate = dateRange[0] ? new Date(dateRange[0]) : null;
-            let endDate = dateRange[1] ? new Date(dateRange[1]) : (startDate ? new Date(startDate) : null);
-            const selectedCategories = categoryChoices.getValue(true);
-
-            if (calendarMode === 'year' && startDate) {
-                const year = startDate.getFullYear();
-                startDate = new Date(year, 0, 1);
-                endDate = new Date(year, 11, 31);
-            } else if (calendarMode === 'month' && startDate) {
-                const year = startDate.getFullYear();
-                const month = startDate.getMonth();
-                startDate = new Date(year, month, 1);
-                endDate = new Date(year, month, getDaysInMonth(year, month));
-            } else if (calendarMode === 'day' && startDate) {
-                endDate = new Date(startDate);
-            }
-
-            let filteredData = rawData;
-            if (platform !== 'all') {
-                filteredData = filteredData.filter(d => d.Platform === platform);
-            }
-            if (startDate) {
-                filteredData = filteredData.filter(d => {
-                    const itemDate = new Date(d.Date);
-                    return (!startDate || itemDate >= startDate) && (!endDate || itemDate <= endDate);
-                });
-            }
-            if (!selectedCategories.includes('all') && selectedCategories.length > 0) {
-                filteredData = filteredData.filter(d => selectedCategories.includes(d.Category.replace(/\n/g, ' ')));
-            }
-
-            console.log('Filtered data:', filteredData);
-
-            const totalSales = filteredData.reduce((sum, d) => sum + (Number(d.Sales) || 0), 0);
-            const totalSalesElement = document.getElementById('totalSales');
-            if (totalSalesElement) {
-                totalSalesElement.textContent = `ยอดขายรวม: ${totalSales.toLocaleString()} บาท`;
-            } else {
-                console.error('totalSales element not found');
-            }
-
-            let labels = [];
-            let salesData = [];
-
-            if (calendarMode === 'year') {
-                const salesByMonth = {};
-                filteredData.forEach(d => {
-                    const date = new Date(d.Date);
-                    const year = date.getFullYear();
-                    const month = date.getMonth();
-                    const thaiYear = year + 543 - 2500;
-                    const monthKey = `${year}-${month}`;
-                    const monthLabel = `${thaiMonths[month]} ${thaiYear}`;
-                    if (!salesByMonth[monthKey]) {
-                        salesByMonth[monthKey] = { label: monthLabel, sales: 0, count: 0, year, month };
-                    }
-                    salesByMonth[monthKey].sales += Number(d.Sales) || 0;
-                    salesByMonth[monthKey].count += 1;
-                });
-
-                labels = Object.keys(salesByMonth)
-                    .sort((a, b) => {
-                        const [yearA, monthA] = a.split('-').map(Number);
-                        const [yearB, monthB] = b.split('-').map(Number);
-                        return yearA - yearB || monthA - monthB;
-                    })
-                    .map(key => salesByMonth[key].label);
-                salesData = Object.keys(salesByMonth)
-                    .sort((a, b) => {
-                        const [yearA, monthA] = a.split('-').map(Number);
-                        const [yearB, monthB] = b.split('-').map(Number);
-                        return yearA - yearB || monthA - monthB;
-                    })
-                    .map(key => salesByMonth[key].sales);
-            } else if (calendarMode === 'month' || calendarMode === 'custom') {
-                const salesByDay = {};
-                filteredData.forEach(d => {
-                    const date = new Date(d.Date);
-                    const year = date.getFullYear();
-                    const month = date.getMonth();
-                    const day = date.getDate();
-                    const dayKey = `${year}-${month}-${day}`;
-                    const dayLabel = `${day} ${thaiMonths[month]}`;
-                    if (!salesByDay[dayKey]) {
-                        salesByDay[dayKey] = { label: dayLabel, sales: 0, count: 0, date };
-                    }
-                    salesByDay[dayKey].sales += Number(d.Sales) || 0;
-                    salesByDay[dayKey].count += 1;
-                });
-
-                const daysInMonth = calendarMode === 'month' && startDate ? getDaysInMonth(startDate.getFullYear(), startDate.getMonth()) : 31;
-                const year = startDate ? startDate.getFullYear() : new Date().getFullYear();
-                const month = startDate ? startDate.getMonth() : new Date().getMonth();
-                
-                const allDays = Array.from({ length: daysInMonth }, (_, i) => {
-                    const day = i + 1;
-                    const dayKey = `${year}-${month}-${day}`;
-                    return {
-                        dayKey,
-                        label: `${day} ${thaiMonths[month]}`,
-                        sales: salesByDay[dayKey] ? salesByDay[dayKey].sales : 0
-                    };
-                });
-
-                labels = allDays.map(day => day.label);
-                salesData = allDays.map(day => day.sales);
-
-                console.log('Days in month:', daysInMonth);
-                console.log('Labels (month mode):', labels);
-                console.log('Sales data (month mode):', salesData);
-            } else if (calendarMode === 'day') {
-                const salesByDay = {};
-                filteredData.forEach(d => {
-                    const date = new Date(d.Date);
-                    const year = date.getFullYear();
-                    const month = date.getMonth();
-                    const day = date.getDate();
-                    const dayKey = `${year}-${month}-${day}`;
-                    const dayLabel = formatDate(date);
-                    if (!salesByDay[dayKey]) {
-                        salesByDay[dayKey] = { label: dayLabel, sales: 0, count: 0, date };
-                    }
-                    salesByDay[dayKey].sales += Number(d.Sales) || 0;
-                    salesByDay[dayKey].count += 1;
-                });
-
-                labels = Object.keys(salesByDay)
-                    .sort((a, b) => new Date(a.split('-').join('/')) - new Date(b.split('-').join('/')))
-                    .map(key => salesByDay[key].label);
-                salesData = Object.keys(salesByDay)
-                    .sort((a, b) => new Date(a.split('-').join('/')) - new Date(b.split('-').join('/')))
-                    .map(key => salesByDay[key].sales);
-            }
-
-            console.log('Final labels:', labels);
-            console.log('Final sales data:', salesData);
-
-            if (salesChart) salesChart.destroy();
-            const salesCtx = document.getElementById('salesChart').getContext('2d');
-            salesChart = new Chart(salesCtx, {
-                type: calendarMode === 'day' ? 'bar' : 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'ยอดขาย (บาท)',
-                        data: salesData,
-                        borderColor: function(context) {
-                            if (calendarMode === 'day') return '#38bdf8';
-                            const chart = context.chart;
-                            const {ctx, chartArea} = chart;
-                            if (!chartArea) return '#38bdf8';
-                            const gradient = ctx.createLinearGradient(chartArea.left, 0, chartArea.right, 0);
-                            gradient.addColorStop(0, '#38bdf8');
-                            gradient.addColorStop(1, '#1e40af');
-                            return gradient;
-                        },
-                        backgroundColor: calendarMode === 'day' ? '#38bdf8' : 'rgba(56, 189, 248, 0.2)',
-                        fill: calendarMode !== 'day',
-                        tension: 0.3,
-                        pointBackgroundColor: '#ffffff',
-                        pointBorderColor: '#38bdf8',
-                        pointBorderWidth: 2,
-                        pointRadius: calendarMode === 'day' ? 0 : 5,
-                        pointHoverRadius: calendarMode === 'day' ? 0 : 8,
-                        borderWidth: calendarMode === 'day' ? 1 : 2,
-                        barThickness: calendarMode === 'day' ? 40 : undefined,
-                        borderRadius: calendarMode === 'day' ? 5 : undefined
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            title: { display: true, text: 'ยอดขาย (บาท)', color: '#2c3e50' },
-                            grid: { color: '#e5e7eb' },
-                            ticks: { color: '#2c3e50' }
-                        },
-                        x: {
-                            title: {
-                                display: true,
-                                text: calendarMode === 'year' ? 'เดือน' : calendarMode === 'month' ? 'วัน' : calendarMode === 'day' ? 'วัน' : 'วันที่',
-                                color: '#2c3e50'
-                            },
-                            grid: { color: '#e5e7eb' },
-                            ticks: { color: '#2c3e50', autoSkip: true, maxTicksLimit: 10 },
-                            reverse: false
-                        }
-                    },
-                    plugins: {
-                        datalabels: { display: false },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    const sales = context.parsed.y;
-                                    return `ยอดขาย: ${sales.toLocaleString()} บาท`;
-                                }
-                            },
-                            backgroundColor: 'rgba(30, 64, 175, 0.8)',
-                            titleColor: '#ffffff',
-                            bodyColor: '#ffffff'
-                        }
-                    }
-                },
-                plugins: [ChartDataLabels]
-            });
-
-            let pieLabels = labels;
-            let pieSalesData = salesData;
-            if (calendarMode === 'day') {
-                const categorySales = {};
-                filteredData.forEach(d => {
-                    const cleanCategory = d.Category.replace(/\n/g, ' ');
-                    categorySales[cleanCategory] = (categorySales[cleanCategory] || 0) + Number(d.Sales) || 0;
-                });
-                pieLabels = Object.keys(categorySales);
-                pieSalesData = Object.values(categorySales);
-            }
-
-            const totalSalesForPie = pieSalesData.reduce((sum, val) => sum + val, 0);
-            const piePercentages = pieSalesData.map(sales => totalSalesForPie > 0 ? (sales / totalSalesForPie * 100).toFixed(1) : 0);
-
-            if (categoryPieChart) categoryPieChart.destroy();
-            const categoryPieCtx = document.getElementById('categoryPieChart').getContext('2d');
-            categoryPieChart = new Chart(categoryPieCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: pieLabels,
-                    datasets: [{
-                        label: calendarMode === 'day' ? 'ยอดขายตามหมวดหมู่ (บาท)' : calendarMode === 'year' ? 'ยอดขายตามเดือน (บาท)' : 'ยอดขายตามวัน (บาท)',
-                        data: pieSalesData,
-                        backgroundColor: pieLabels.map((_, i) => colorPalette[i % colorPalette.length]),
-                        borderColor: '#ffffff',
-                        borderWidth: 2
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    cutout: '50%',
-                    plugins: {
-                        legend: { display: true, position: 'bottom' },
-                        title: {
-                            display: true,
-                            text: calendarMode === 'day' ? 'ยอดขายตามหมวดหมู่ (บาท)' : calendarMode === 'year' ? 'ยอดขายตามเดือน (บาท)' : 'ยอดขายตามวัน (บาท)',
-                            font: { size: 16 },
-                            color: '#2c3e50'
-                        },
-                        datalabels: {
-                            formatter: (value, ctx) => piePercentages[ctx.dataIndex] + '%',
-                            color: '#2c3e50',
-                            font: {
-                                weight: 'bold',
-                                size: 12
-                            },
-                            textShadowColor: 'rgba(0,0,0,0.5)',
-                            textShadowBlur: 5
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    const sales = context.parsed;
-                                    const percentage = piePercentages[context.dataIndex];
-                                    return `ยอดขาย: ${sales.toLocaleString()} บาท (${percentage}%)`;
-                                }
-                            },
-                            backgroundColor: 'rgba(30, 64, 175, 0.8)',
-                            titleColor: '#ffffff',
-                            bodyColor: '#ffffff'
-                        }
-                    }
-                },
-                plugins: [ChartDataLabels]
-            });
-
-            const categorySales = {};
-            const categoryCount = {};
-            filteredData.forEach(d => {
-                if (d.Sales) {
-                    const cleanCategory = d.Category.replace(/\n/g, ' ');
-                    categorySales[cleanCategory] = (categorySales[cleanCategory] || 0) + Number(d.Sales);
-                    categoryCount[cleanCategory] = (categoryCount[cleanCategory] || 0) + 1;
-                }
-            });
-
-            const topCategories = Object.entries(categorySales)
-                .map(([category, sales]) => ({
-                    category,
-                    sales,
-                    count: categoryCount[category] || 0
-                }))
-                .sort((a, b) => b.sales - a.sales)
-                .slice(0, 5);
-
-            const otherSales = Object.entries(categorySales)
-                .slice(5)
-                .reduce((sum, [, sales]) => sum + sales, 0);
-            const otherCount = Object.entries(categoryCount)
-                .slice(5)
-                .reduce((sum, [, count]) => sum + count, 0);
-
-            const barLabels = topCategories.map(item => item.category).concat(otherSales > 0 ? ['อื่นๆ'] : []);
-            const barSalesData = topCategories.map(item => item.sales).concat(otherSales > 0 ? [otherSales] : []);
-            const totalSalesForBar = barSalesData.reduce((sum, val) => sum + val, 0);
-            const barPercentages = barSalesData.map(sales => totalSalesForBar > 0 ? (sales / totalSalesForBar * 100).toFixed(1) : 0);
-
-            if (topProductsBarChart) topProductsBarChart.destroy();
-            const topProductsBarCtx = document.getElementById('topProductsBarChart').getContext('2d');
-            topProductsBarChart = new Chart(topProductsBarCtx, {
-                type: 'bar',
-                data: {
-                    labels: barLabels,
-                    datasets: [{
-                        label: 'ยอดขายสินค้า (บาท)',
-                        data: barSalesData,
-                        backgroundColor: barLabels.map((_, i) => colorPalette[i % colorPalette.length]),
-                        borderColor: '#ffffff',
-                        borderWidth: 1,
-                        borderRadius: 5,
-                        barThickness: 40
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            title: { display: true, text: 'ยอดขาย (บาท)', color: '#2c3e50' },
-                            grid: { color: '#e5e7eb' },
-                            ticks: { color: '#2c3e50' }
-                        },
-                        x: {
-                            title: { display: true, text: 'หมวดหมู่', color: '#2c3e50' },
-                            grid: { display: false },
-                            ticks: { color: '#2c3e50' }
-                        }
-                    },
-                    plugins: {
-                        legend: { display: false },
-                        title: {
-                            display: true,
-                            text: 'ยอดขาย 5 อันดับแรกและอื่นๆ (บาท)',
-                            font: { size: 16 },
-                            color: '#2c3e50'
-                        },
-                        datalabels: {
-                            anchor: 'end',
-                            align: 'top',
-                            offset: 5,
-                            formatter: (value, ctx) => barPercentages[ctx.dataIndex] + '%',
-                            color: '#2c3e50',
-                            font: {
-                                weight: 'bold',
-                                size: 12
-                            },
-                            textShadowColor: 'rgba(0,0,0,0.5)',
-                            textShadowBlur: 5
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    const sales = context.parsed.y;
-                                    const percentage = barPercentages[ctx.dataIndex];
-                                    return `ยอดขาย: ${sales.toLocaleString()} บาท (${percentage}%)`;
-                                }
-                            },
-                            backgroundColor: 'rgba(30, 64, 175, 0.8)',
-                            titleColor: '#ffffff',
-                            bodyColor: '#ffffff'
-                        }
-                    }
-                },
-                plugins: [ChartDataLabels]
-            });
-
-            const totalTopSales = topCategories.reduce((sum, item) => sum + item.sales, 0);
-            const topCategoriesWithPercentage = topCategories.map(item => ({
-                ...item,
-                percentage: totalTopSales > 0 ? (item.sales / totalTopSales * 100).toFixed(1) : 0
-            }));
-
-            const tableBody = document.querySelector('#topCategoriesTable tbody');
-            if (tableBody) {
-                tableBody.innerHTML = '';
-                topCategoriesWithPercentage.forEach(item => {
+                noDataMessage.style.display = 'none';
+                allCategories.forEach(item => {
                     const row = document.createElement('tr');
                     row.innerHTML = `
                         <td>${item.category}</td>
@@ -1133,15 +590,742 @@
                     `;
                     tableBody.appendChild(row);
                 });
-            } else {
-                console.error('topCategoriesTable tbody not found');
+                console.log('Modal - Table updated with', allCategories.length, 'categories');
+            }
+        } else {
+            console.error('Modal - allSalesTable tbody or noDataMessage not found');
+        }
+    }
+
+    async function loadData() {
+        console.log('Starting loadData...');
+        const errorMessage = document.getElementById('errorMessage');
+        try {
+            const response = await fetch('sales_data.json');
+            console.log('Fetch response:', response);
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            const data = await response.json();
+            console.log('Loaded data (first 5 rows):', data.slice(0, 5));
+            if (!data || data.length === 0) {
+                throw new Error('No data found in sales_data.json');
+            }
+            rawData = data.filter(d => {
+                if (!d || typeof d !== 'object') {
+                    console.warn('Invalid data object:', d);
+                    return false;
+                }
+                let dateStr = d.Date;
+                if (typeof dateStr !== 'string' || !dateStr) {
+                    console.warn('Missing or invalid date:', d);
+                    return false;
+                }
+                dateStr = dateStr.trim();
+                if (dateStr.includes(' ')) {
+                    dateStr = dateStr.split(' ')[0];
+                }
+                let parsedDate;
+                if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                    parsedDate = new Date(dateStr);
+                } else if (dateStr.match(/^\d{2}-\d{2}-\d{4}$/)) {
+                    const [day, month, year] = dateStr.split('-');
+                    parsedDate = new Date(`${year}-${month}-${day}`);
+                } else if (dateStr.match(/^\d{4}\/\d{2}\/\d{2}$/)) {
+                    const [year, month, day] = dateStr.split('/');
+                    parsedDate = new Date(`${year}-${month}-${day}`);
+                } else if (dateStr.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+                    const [day, month, year] = dateStr.split('/');
+                    parsedDate = new Date(`${year}-${month}-${day}`);
+                } else if (dateStr.match(/^\d{1,2}-\d{1,2}-\d{4}$/)) {
+                    const [day, month, year] = dateStr.split('-').map(part => part.padStart(2, '0'));
+                    parsedDate = new Date(`${year}-${month}-${day}`);
+                } else if (dateStr.match(/^\d{1,2}\/\d{1,2}\/\d{4}$/)) {
+                    const [day, month, year] = dateStr.split('/').map(part => part.padStart(2, '0'));
+                    parsedDate = new Date(`${year}-${month}-${day}`);
+                } else {
+                    console.warn('Unrecognized date format:', dateStr, d);
+                    return false;
+                }
+                if (isNaN(parsedDate.getTime())) {
+                    console.warn('Invalid date after parsing:', dateStr, d);
+                    return false;
+                }
+                const sales = Number(d.Sales);
+                if (isNaN(sales) || sales < 0) {
+                    console.warn('Invalid or negative sales:', d);
+                    return false;
+                }
+                if (!d.Category || typeof d.Category !== 'string' || d.Category.trim() === '') {
+                    console.warn('Missing or invalid category:', d);
+                    return false;
+                }
+                d.Date = parsedDate.toISOString().split('T')[0];
+                return true;
+            });
+            console.log('Filtered rawData (first 10 rows):', rawData.slice(0, 10).map(d => ({ Date: d.Date, Sales: d.Sales })));
+            console.log('Total rawData sales:', rawData.reduce((sum, d) => sum + Number(d.Sales), 0));
+            const januaryData = rawData.filter(d => d.Date.startsWith('2025-01'));
+            console.log('January 2025 raw data:', januaryData.map(d => ({ Date: d.Date, Sales: d.Sales })));
+            console.log('January 2025 raw sales sum:', januaryData.reduce((sum, d) => sum + Number(d.Sales), 0));
+            const suspiciousSales = rawData.filter(d => {
+                const sales = Number(d.Sales);
+                return Math.abs(sales - 6929.08) < 0.01 || Math.abs(sales - 556.33) < 0.01 || (sales > 0 && sales <= 6929.08);
+            });
+            console.log('Suspicious sales (≈6,929.08 or ≈556.33):', suspiciousSales);
+            const categories = [...new Set(rawData.map(d => d.Category.replace(/\n/g, ' ').trim()))];
+            categoryChoices.setChoices(
+                [{ value: 'all', label: 'ทุกหมวดหมู่' }].concat(categories.map(cat => ({ value: cat, label: cat }))),
+                'value',
+                'label',
+                true
+            );
+            updateDashboard();
+        } catch (error) {
+            console.error('Error loading data:', error);
+            if (errorMessage) {
+                errorMessage.textContent = `ไม่สามารถโหลดข้อมูลได้: ${error.message}`;
+                errorMessage.style.display = 'block';
             }
         }
+    }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log('DOM fully loaded');
-            loadData();
+    const flatpickrInstance = flatpickr("#dateRange", {
+        mode: "range",
+        dateFormat: "Y-m-d",
+        appendTo: document.querySelector('.date-picker-wrapper'),
+        static: true,
+        locale: {
+            firstDayOfWeek: 1,
+            weekdays: {
+                shorthand: ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"],
+                longhand: ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"]
+            },
+            months: {
+                shorthand: thaiMonths,
+                longhand: thaiLongMonths
+            }
+        },
+        onOpen: function(selectedDates, dateStr, instance) {
+            console.log('Flatpickr opened, current mode:', calendarMode, 'Selected dates:', selectedDates);
+            const calendar = instance.calendarContainer;
+            let modesContainer = calendar.querySelector('.calendar-modes');
+            if (!modesContainer) {
+                modesContainer = document.createElement('div');
+                modesContainer.className = 'calendar-modes';
+                modesContainer.innerHTML = `
+                    <button class="calendar-mode-btn" data-mode="year">ปี</button>
+                    <button class="calendar-mode-btn" data-mode="month">เดือน</button>
+                    <button class="calendar-mode-btn" data-mode="day">วัน</button>
+                    <button class="calendar-mode-btn active" data-mode="custom">กำหนดเอง</button>
+                `;
+                calendar.insertBefore(modesContainer, calendar.firstChild);
+
+                const modeButtons = modesContainer.querySelectorAll('.calendar-mode-btn');
+                modeButtons.forEach(button => {
+                    button.addEventListener('click', () => {
+                        modeButtons.forEach(btn => btn.classList.remove('active'));
+                        button.classList.add('active');
+                        calendarMode = button.dataset.mode;
+                        console.log('Mode changed to:', calendarMode);
+                        updateCalendarView(instance, selectedDates);
+                    });
+                });
+            }
+
+            let selectContainer = calendar.querySelector('.custom-select-container');
+            if (!selectContainer) {
+                selectContainer = document.createElement('div');
+                selectContainer.className = 'custom-select-container';
+                calendar.appendChild(selectContainer);
+            }
+
+            let customSelect = selectContainer.querySelector('.calendar-custom-select');
+            if (!customSelect) {
+                customSelect = document.createElement('select');
+                customSelect.className = 'calendar-custom-select';
+                selectContainer.appendChild(customSelect);
+            }
+
+            let clearButton = calendar.querySelector('.calendar-clear-btn');
+            if (!clearButton) {
+                clearButton = document.createElement('button');
+                clearButton.className = 'calendar-clear-btn';
+                clearButton.textContent = 'เคลียร์';
+                clearButton.onclick = () => {
+                    instance.clear();
+                    document.getElementById('platformFilter').value = 'all';
+                    categoryChoices.removeActiveItems();
+                    categoryChoices.setChoiceByValue('all');
+                    calendarMode = 'custom';
+                    instance.close();
+                    updateDashboard();
+                    console.log('Cleared all filters');
+                };
+                selectContainer.appendChild(clearButton);
+            }
+
+            updateCalendarView(instance, selectedDates);
+        },
+        onChange: function(selectedDates, dateStr, instance) {
+            console.log('Flatpickr onChange, selectedDates:', selectedDates, 'dateStr:', dateStr, 'mode:', calendarMode);
+            if (calendarMode === 'year' || calendarMode === 'month' || calendarMode === 'day') {
+                instance.close();
+                updateDashboard();
+            }
+        },
+        onMonthChange: function() {
+            console.log('Flatpickr onMonthChange, mode:', calendarMode);
+            if (calendarMode !== 'year' && calendarMode !== 'month') {
+                this.redraw();
+            }
+        },
+        onYearChange: function() {
+            console.log('Flatpickr onYearChange, mode:', calendarMode);
+            if (calendarMode !== 'year' && calendarMode !== 'month') {
+                this.redraw();
+            }
+        }
+    });
+
+    function updateCalendarView(instance, selectedDates) {
+        console.log('Starting updateCalendarView, mode:', calendarMode, 'selectedDates:', selectedDates);
+        const calendar = instance.calendarContainer;
+        const selectContainer = calendar.querySelector('.custom-select-container');
+        const customSelect = selectContainer.querySelector('.calendar-custom-select');
+        const dayContainer = calendar.querySelector('.flatpickr-days');
+        const monthNav = calendar.querySelector('.flatpickr-month');
+
+        if (calendarMode === 'year' || calendarMode === 'month') {
+            if (dayContainer) dayContainer.className = 'flatpickr-days calendar-hidden';
+            if (monthNav) monthNav.className = 'flatpickr-month calendar-hidden';
+
+            if (customSelect) {
+                customSelect.style.display = 'block';
+                customSelect.style.visibility = 'visible';
+            }
+
+            if (calendarMode === 'year') {
+                let years = [...new Set(rawData.map(d => new Date(d.Date).getFullYear()))].sort((a, b) => a - b);
+                if (years.length === 0) {
+                    years = [2023, 2024, 2025];
+                    console.warn('No years found in rawData, using fallback years');
+                }
+                customSelect.innerHTML = years.map(year => `<option value="${year}">${year}</option>`).join('');
+                customSelect.value = selectedDates[0] ? selectedDates[0].getFullYear() : years[0];
+                customSelect.onchange = () => {
+                    instance.setDate(new Date(customSelect.value, 0, 1));
+                    instance.close();
+                    updateDashboard();
+                    console.log('Year selected:', customSelect.value);
+                };
+            } else if (calendarMode === 'month') {
+                const selectedYear = selectedDates[0] ? selectedDates[0].getFullYear() : new Date().getFullYear();
+                customSelect.innerHTML = thaiLongMonths.map((month, index) => `<option value="${index}">${month}</option>`).join('');
+                customSelect.value = selectedDates[0] ? selectedDates[0].getMonth() : new Date().getMonth();
+                customSelect.onchange = () => {
+                    instance.setDate(new Date(selectedYear, customSelect.value, 1));
+                    instance.close();
+                    updateDashboard();
+                    console.log('Month selected:', thaiLongMonths[customSelect.value], 'Year:', selectedYear);
+                };
+            }
+        } else {
+            if (dayContainer) dayContainer.className = 'flatpickr-days';
+            if (monthNav) monthNav.className = 'flatpickr-month';
+            if (customSelect) {
+                customSelect.style.display = 'none';
+                customSelect.style.visibility = 'hidden';
+            }
+            instance.config.mode = calendarMode === 'day' ? 'single' : 'range';
+            instance.redraw();
+        }
+        console.log('updateCalendarView completed');
+    }
+
+    function updateDashboard() {
+        console.log('Starting updateDashboard...');
+        const platform = document.getElementById('platformFilter').value;
+        const dateRange = document.getElementById('dateRange').value.split(" to ");
+        let startDate = dateRange[0] ? new Date(dateRange[0]) : null;
+        let endDate = dateRange[1] ? new Date(dateRange[1]) : (startDate ? new Date(startDate) : null);
+        const selectedCategories = categoryChoices.getValue(true);
+
+        console.log('Dashboard - Platform:', platform, 'Date range:', dateRange, 'Calendar mode:', calendarMode);
+        console.log('Dashboard - Start date:', startDate, 'End date:', endDate);
+
+        if (calendarMode === 'year' && startDate) {
+            const year = startDate.getFullYear();
+            startDate = new Date(year, 0, 1);
+            endDate = new Date(year, 11, 31);
+        } else if (calendarMode === 'month' && startDate) {
+            const year = startDate.getFullYear();
+            const month = startDate.getMonth();
+            startDate = new Date(year, month, 1);
+            endDate = new Date(year, month, getDaysInMonth(year, month));
+        } else if (calendarMode === 'day' && startDate) {
+            endDate = new Date(startDate);
+        }
+
+        console.log('Dashboard - Adjusted start date:', startDate, 'Adjusted end date:', endDate);
+
+        let filteredData = rawData;
+        if (platform !== 'all') {
+            filteredData = filteredData.filter(d => d.Platform === platform);
+        }
+        let allDataBeforeFilter = [];
+        if (startDate && endDate) {
+            allDataBeforeFilter = filteredData.map(d => ({ Date: d.Date, Sales: d.Sales }));
+            filteredData = filteredData.filter(d => {
+                const itemDate = new Date(d.Date);
+                if (isNaN(itemDate.getTime())) {
+                    console.warn('Invalid date in filtered data:', d);
+                    return false;
+                }
+                return itemDate.getFullYear() === startDate.getFullYear() && 
+                       itemDate.getMonth() === startDate.getMonth() && 
+                       (calendarMode !== 'day' || itemDate.getDate() === startDate.getDate());
+            });
+            console.log('Dashboard - Data before date filter:', allDataBeforeFilter);
+            console.log('Dashboard - Filtered data:', filteredData.map(d => ({ Date: d.Date, Sales: d.Sales })));
+            console.log('Dashboard - Filtered data sales sum:', filteredData.reduce((sum, d) => sum + Number(d.Sales), 0));
+        }
+        if (!selectedCategories.includes('all') && selectedCategories.length > 0) {
+            filteredData = filteredData.filter(d => selectedCategories.includes(d.Category.replace(/\n/g, ' ')));
+        }
+
+        if (calendarMode === 'month' && startDate && startDate.getMonth() === 0 && startDate.getFullYear() === 2025) {
+            const januaryData = rawData.filter(d => {
+                const itemDate = new Date(d.Date);
+                return itemDate.getFullYear() === 2025 && itemDate.getMonth() === 0;
+            });
+            console.log('Dashboard - All January 2025 data:', januaryData.map(d => ({ Date: d.Date, Sales: d.Sales })));
+            console.log('Dashboard - January 2025 sales sum:', januaryData.reduce((sum, d) => sum + Number(d.Sales), 0));
+            const missingSales = januaryData.filter(d => {
+                const sales = Number(d.Sales);
+                return Math.abs(sales - 6929.08) < 0.01 || (sales > 0 && sales <= 6929.08);
+            });
+            console.log('Dashboard - Possible missing sales (≈6,929.08):', missingSales);
+            const filteredOut = allDataBeforeFilter.filter(d => {
+                const itemDate = new Date(d.Date);
+                return itemDate.getFullYear() === 2025 && itemDate.getMonth() === 0 && 
+                       !filteredData.some(fd => fd.Date === d.Date && fd.Sales === d.Sales);
+            });
+            console.log('Dashboard - Filtered out January 2025 data:', filteredOut);
+            console.log('Dashboard - Filtered out January 2025 sales sum:', filteredOut.reduce((sum, d) => sum + Number(d.Sales), 0));
+        }
+
+        const totalSales = filteredData.reduce((sum, d) => sum + Number(d.Sales), 0);
+        const totalSalesElement = document.getElementById('totalSales');
+        if (totalSalesElement) {
+            totalSalesElement.textContent = `ยอดขายรวม: ${totalSales.toLocaleString()} บาท`;
+            console.log('Dashboard - Updated totalSales:', totalSales);
+        } else {
+            console.error('Dashboard - totalSales element not found');
+        }
+
+        let labels = [];
+        let salesData = [];
+
+        if (filteredData.length === 0) {
+            console.warn('Dashboard - No data after filtering, setting empty charts');
+            labels = ['ไม่มีข้อมูล'];
+            salesData = [0];
+        } else if (!startDate || calendarMode === 'custom') {
+            const salesByMonth = {};
+            filteredData.forEach(d => {
+                const date = new Date(d.Date);
+                const year = date.getFullYear();
+                const month = date.getMonth();
+                const thaiYear = year + 543 - 2500;
+                const monthKey = `${year}-${month}`;
+                const monthLabel = `${thaiMonths[month]} ${thaiYear}`;
+                if (!salesByMonth[monthKey]) {
+                    salesByMonth[monthKey] = { label: monthLabel, sales: 0, count: 0, year, month };
+                }
+                salesByMonth[monthKey].sales += Number(d.Sales) || 0;
+                salesByMonth[monthKey].count += 1;
+            });
+
+            labels = Object.keys(salesByMonth)
+                .sort((a, b) => {
+                    const [yearA, monthA] = a.split('-').map(Number);
+                    const [yearB, monthB] = b.split('-').map(Number);
+                    return yearA - yearB || monthA - monthB;
+                })
+                .map(key => salesByMonth[key].label);
+            salesData = Object.keys(salesByMonth)
+                .sort((a, b) => {
+                    const [yearA, monthA] = a.split('-').map(Number);
+                    const [yearB, monthB] = b.split('-').map(Number);
+                    return yearA - yearB || monthA - monthB;
+                })
+                .map(key => salesByMonth[key].sales);
+        } else if (calendarMode === 'year') {
+            const salesByMonth = {};
+            filteredData.forEach(d => {
+                const date = new Date(d.Date);
+                const year = date.getFullYear();
+                const month = date.getMonth();
+                const thaiYear = year + 543 - 2500;
+                const monthKey = `${year}-${month}`;
+                const monthLabel = `${thaiMonths[month]} ${thaiYear}`;
+                if (!salesByMonth[monthKey]) {
+                    salesByMonth[monthKey] = { label: monthLabel, sales: 0, count: 0, year, month };
+                }
+                salesByMonth[monthKey].sales += Number(d.Sales) || 0;
+                salesByMonth[monthKey].count += 1;
+            });
+
+            labels = Object.keys(salesByMonth)
+                .sort((a, b) => {
+                    const [yearA, monthA] = a.split('-').map(Number);
+                    const [yearB, monthB] = b.split('-').map(Number);
+                    return yearA - yearB || monthA - monthB;
+                })
+                .map(key => salesByMonth[key].label);
+            salesData = Object.keys(salesByMonth)
+                .sort((a, b) => {
+                    const [yearA, monthA] = a.split('-').map(Number);
+                    const [yearB, monthB] = b.split('-').map(Number);
+                    return yearA - yearB || monthA - monthB;
+                })
+                .map(key => salesByMonth[key].sales);
+        } else if (calendarMode === 'month') {
+            const salesByDay = {};
+            filteredData.forEach(d => {
+                const date = new Date(d.Date);
+                const year = date.getFullYear();
+                const month = date.getMonth();
+                const day = date.getDate();
+                const dayKey = `${year}-${month}-${day}`;
+                const dayLabel = `${day} ${thaiMonths[month]}`;
+                if (!salesByDay[dayKey]) {
+                    salesByDay[dayKey] = { label: dayLabel, sales: 0, count: 0, date };
+                }
+                salesByDay[dayKey].sales += Number(d.Sales) || 0;
+                salesByDay[dayKey].count += 1;
+            });
+
+            const daysInMonth = startDate ? getDaysInMonth(startDate.getFullYear(), startDate.getMonth()) : 31;
+            const year = startDate ? startDate.getFullYear() : new Date().getFullYear();
+            const month = startDate ? startDate.getMonth() : new Date().getMonth();
+            
+            const allDays = Array.from({ length: daysInMonth }, (_, i) => {
+                const day = i + 1;
+                const dayKey = `${year}-${month}-${day}`;
+                return {
+                    dayKey,
+                    label: `${day} ${thaiMonths[month]}`,
+                    sales: salesByDay[dayKey] ? salesByDay[dayKey].sales : 0
+                };
+            });
+
+            labels = allDays.map(day => day.label);
+            salesData = allDays.map(day => day.sales);
+        } else if (calendarMode === 'day') {
+            const salesByDay = {};
+            filteredData.forEach(d => {
+                const date = new Date(d.Date);
+                const year = date.getFullYear();
+                const month = date.getMonth();
+                const day = date.getDate();
+                const dayKey = `${year}-${month}-${day}`;
+                const dayLabel = formatDate(date);
+                if (!salesByDay[dayKey]) {
+                    salesByDay[dayKey] = { label: dayLabel, sales: 0, count: 0, date };
+                }
+                salesByDay[dayKey].sales += Number(d.Sales) || 0;
+                salesByDay[dayKey].count += 1;
+            });
+
+            labels = Object.keys(salesByDay)
+                .sort((a, b) => new Date(a.split('-').join('/')) - new Date(b.split('-').join('/')))
+                .map(key => salesByDay[key].label);
+            salesData = Object.keys(salesByMonth)
+                .sort((a, b) => new Date(a.split('-').join('/')) - new Date(b.split('-').join('/')))
+                .map(key => salesByDay[key].sales);
+        }
+
+        console.log('Dashboard - Final labels:', labels);
+        console.log('Dashboard - Final sales data:', salesData);
+
+        if (salesChart) salesChart.destroy();
+        const salesCtx = document.getElementById('salesChart').getContext('2d');
+        salesChart = new Chart(salesCtx, {
+            type: calendarMode === 'day' ? 'bar' : 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'ยอดขาย (บาท)',
+                    data: salesData,
+                    borderColor: function(context) {
+                        if (calendarMode === 'day') return '#38bdf8';
+                        const chart = context.chart;
+                        const {ctx, chartArea} = chart;
+                        if (!chartArea) return '#38bdf8';
+                        const gradient = ctx.createLinearGradient(chartArea.left, 0, chartArea.right, 0);
+                        gradient.addColorStop(0, '#38bdf8');
+                        gradient.addColorStop(1, '#1e40af');
+                        return gradient;
+                    },
+                    backgroundColor: calendarMode === 'day' ? '#38bdf8' : 'rgba(56, 189, 248, 0.2)',
+                    fill: calendarMode !== 'day',
+                    tension: 0.3,
+                    pointBackgroundColor: '#ffffff',
+                    pointBorderColor: '#38bdf8',
+                    pointBorderWidth: 2,
+                    pointRadius: calendarMode === 'day' ? 0 : 5,
+                    pointHoverRadius: calendarMode === 'day' ? 0 : 8,
+                    borderWidth: calendarMode === 'day' ? 1 : 2,
+                    barThickness: calendarMode === 'day' ? 40 : undefined,
+                    borderRadius: calendarMode === 'day' ? 5 : undefined
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: { display: true, text: 'ยอดขาย (บาท)', color: '#2c3e50' },
+                        grid: { color: '#e5e7eb' },
+                        ticks: { color: '#2c3e50' }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: calendarMode === 'year' ? 'เดือน' : calendarMode === 'month' ? 'วัน' : calendarMode === 'day' ? 'วัน' : 'วันที่',
+                            color: '#2c3e50'
+                        },
+                        grid: { color: '#e5e7eb' },
+                        ticks: { color: '#2c3e50', autoSkip: true, maxTicksLimit: 10 },
+                        reverse: false
+                    }
+                },
+                plugins: {
+                    datalabels: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const sales = context.parsed.y;
+                                return `ยอดขาย: ${sales.toLocaleString()} บาท`;
+                            }
+                        },
+                        backgroundColor: 'rgba(30, 64, 175, 0.8)',
+                        titleColor: '#ffffff',
+                        bodyColor: '#ffffff'
+                    }
+                }
+            },
+            plugins: [ChartDataLabels]
         });
-    </script>
+        console.log('Dashboard - Sales chart updated');
+
+        let pieLabels = labels;
+        let pieSalesData = salesData;
+        if (calendarMode === 'day') {
+            const categorySales = {};
+            filteredData.forEach(d => {
+                const cleanCategory = d.Category.replace(/\n/g, ' ');
+                categorySales[cleanCategory] = (categorySales[cleanCategory] || 0) + Number(d.Sales) || 0;
+            });
+            pieLabels = Object.keys(categorySales);
+            pieSalesData = Object.values(categorySales);
+        }
+
+        const totalSalesForPie = pieSalesData.reduce((sum, val) => sum + val, 0);
+        const piePercentages = pieSalesData.map(sales => totalSalesForPie > 0 ? (sales / totalSalesForPie * 100).toFixed(1) : 0);
+
+        if (categoryPieChart) categoryPieChart.destroy();
+        const categoryPieCtx = document.getElementById('categoryPieChart').getContext('2d');
+        categoryPieChart = new Chart(categoryPieCtx, {
+            type: 'bar',
+            data: {
+                labels: pieLabels,
+                datasets: [{
+                    label: calendarMode === 'day' ? 'ยอดขายตามหมวดหมู่ (บาท)' : calendarMode === 'year' ? 'ยอดขายตามเดือน (บาท)' : 'ยอดขายตามวัน (บาท)',
+                    data: pieSalesData,
+                    backgroundColor: pieLabels.map((_, i) => colorPalette[i % colorPalette.length]),
+                    borderColor: '#ffffff',
+                    borderWidth: 1,
+                    borderRadius: 5,
+                    barThickness: 20
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        title: { display: true, text: 'ยอดขาย (บาท)', color: '#2c3e50' },
+                        grid: { color: '#e5e7eb' },
+                        ticks: { color: '#2c3e50' }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: calendarMode === 'day' ? 'หมวดหมู่' : calendarMode === 'year' ? 'เดือน' : 'วัน',
+                            color: '#2c3e50'
+                        },
+                        grid: { display: false },
+                        ticks: { color: '#2c3e50' }
+                    }
+                },
+                plugins: {
+                    legend: { display: false },
+                    title: {
+                        display: true,
+                        text: calendarMode === 'day' ? 'ยอดขายตามหมวดหมู่ (บาท)' : calendarMode === 'year' ? 'ยอดขายตามเดือน (บาท)' : 'ยอดขายตามวัน (บาท)',
+                        font: { size: 16 },
+                        color: '#2c3e50'
+                    },
+                    datalabels: {
+                        anchor: 'end',
+                        align: 'end',
+                        offset: 5,
+                        formatter: (value, ctx) => piePercentages[ctx.dataIndex] + '%',
+                        color: '#2c3e50',
+                        font: {
+                            weight: 'bold',
+                            size: 12
+                        },
+                        textShadowColor: 'rgba(0,0,0,0.5)',
+                        textShadowBlur: 5
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const sales = context.parsed.x;
+                                const percentage = piePercentages[ctx.dataIndex];
+                                return `ยอดขาย: ${sales.toLocaleString()} บาท (${percentage}%)`;
+                            }
+                        },
+                        backgroundColor: 'rgba(30, 64, 175, 0.8)',
+                        titleColor: '#ffffff',
+                        bodyColor: '#ffffff'
+                    }
+                }
+            },
+            plugins: [ChartDataLabels]
+        });
+        console.log('Dashboard - Category pie chart updated');
+
+        const categorySales = {};
+        const categoryCount = {};
+        filteredData.forEach(d => {
+            if (d.Sales) {
+                const cleanCategory = d.Category.replace(/\n/g, ' ');
+                categorySales[cleanCategory] = (categorySales[cleanCategory] || 0) + Number(d.Sales);
+                categoryCount[cleanCategory] = (categoryCount[cleanCategory] || 0) + 1;
+            }
+        });
+
+        const topCategories = Object.entries(categorySales)
+            .map(([category, sales]) => ({
+                category,
+                sales,
+                count: categoryCount[category] || 0
+            }))
+            .sort((a, b) => b.sales - a.sales)
+            .slice(0, 5);
+
+        const otherSales = Object.entries(categorySales)
+            .slice(5)
+            .reduce((sum, [, sales]) => sum + sales, 0);
+        const otherCount = Object.entries(categoryCount)
+            .slice(5)
+            .reduce((sum, [, count]) => sum + count, 0);
+
+        const barLabels = topCategories.map(item => item.category).concat(otherSales > 0 ? ['อื่นๆ'] : []);
+        const barSalesData = topCategories.map(item => item.sales).concat(otherSales > 0 ? [otherSales] : []);
+        const totalSalesForBar = barSalesData.reduce((sum, val) => sum + val, 0);
+        const barPercentages = barSalesData.map(sales => totalSalesForBar > 0 ? (sales / totalSalesForBar * 100).toFixed(1) : 0);
+
+        if (topProductsBarChart) topProductsBarChart.destroy();
+        const topProductsBarCtx = document.getElementById('topProductsBarChart').getContext('2d');
+        topProductsBarChart = new Chart(topProductsBarCtx, {
+            type: 'doughnut',
+            data: {
+                labels: barLabels,
+                datasets: [{
+                    label: 'ยอดขายสินค้า (บาท)',
+                    data: barSalesData,
+                    backgroundColor: barLabels.map((_, i) => colorPalette[i % colorPalette.length]),
+                    borderColor: '#ffffff',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                cutout: '50%',
+                plugins: {
+                    legend: { display: true, position: 'bottom' },
+                    title: {
+                        display: true,
+                        text: 'ยอดขาย 5 อันดับแรกและอื่นๆ (บาท)',
+                        font: { size: 16 },
+                        color: '#2c3e50'
+                    },
+                    datalabels: {
+                        formatter: (value, ctx) => barPercentages[ctx.dataIndex] + '%',
+                        color: '#2c3e50',
+                        font: {
+                            weight: 'bold',
+                            size: 12
+                        },
+                        textShadowColor: 'rgba(0,0,0,0.5)',
+                        textShadowBlur: 5
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const sales = context.parsed;
+                                const percentage = barPercentages[ctx.dataIndex];
+                                return `ยอดขาย: ${sales.toLocaleString()} บาท (${percentage}%)`;
+                            }
+                        },
+                        backgroundColor: 'rgba(30, 64, 175, 0.8)',
+                        titleColor: '#ffffff',
+                        bodyColor: '#ffffff'
+                    }
+                }
+            },
+            plugins: [ChartDataLabels]
+        });
+        console.log('Dashboard - Top products chart updated');
+
+        const totalTopSales = topCategories.reduce((sum, item) => sum + item.sales, 0);
+        const topCategoriesWithPercentage = topCategories.map(item => ({
+            ...item,
+            percentage: totalTopSales > 0 ? (item.sales / totalTopSales * 100).toFixed(1) : 0
+        }));
+
+        const tableBody = document.querySelector('#topCategoriesTable tbody');
+        if (tableBody) {
+            tableBody.innerHTML = '';
+            topCategoriesWithPercentage.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.category}</td>
+                    <td>${item.count.toLocaleString()}</td>
+                    <td>${item.sales.toLocaleString()}</td>
+                    <td>${item.percentage}%</td>
+                `;
+                tableBody.appendChild(row);
+            });
+            console.log('Dashboard - Top categories table updated with', topCategoriesWithPercentage.length, 'rows');
+        } else {
+            console.error('Dashboard - topCategoriesTable tbody not found');
+        }
+
+        console.log('updateDashboard completed');
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        console.log('DOM fully loaded');
+        loadData();
+    });
+</script>
 </body>
 </html>
